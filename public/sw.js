@@ -1,12 +1,13 @@
-// OLA Driver offline support.
+// OLA offline support (driver app and shop till).
 // - Static assets (/_next/static, icons): cache-first (they are versioned).
-// - The /driver page: network-first, falling back to the last saved copy.
+// - The /driver and /pos pages: network-first, falling back to the last saved copy.
 // - Everything else (API calls to Supabase, other pages): network only.
-const CACHE = "ola-driver-v1";
+const CACHE = "ola-offline-v2";
+const PAGES = ["/driver", "/pos"];
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/driver"]).catch(() => {})));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PAGES).catch(() => {})));
 });
 
 self.addEventListener("activate", (e) => {
@@ -21,7 +22,7 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  if (url.pathname.startsWith("/_next/static/") || url.pathname === "/icon.svg" || url.pathname === "/manifest.webmanifest") {
+  if (url.pathname.startsWith("/_next/static/") || url.pathname === "/icon.svg" || url.pathname === "/manifest.webmanifest" || url.pathname === "/manifest-pos.webmanifest") {
     e.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
         const copy = res.clone();
@@ -32,15 +33,16 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  if (url.pathname === "/driver" && req.mode === "navigate") {
+  if (PAGES.includes(url.pathname) && req.mode === "navigate") {
+    const key = url.pathname;
     e.respondWith(
       fetch(req).then((res) => {
         if (res.ok && !res.redirected) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put("/driver", copy));
+          caches.open(CACHE).then((c) => c.put(key, copy));
         }
         return res;
-      }).catch(() => caches.match("/driver").then((hit) => hit || new Response("Offline — open the driver app once while online.", { status: 503 }))),
+      }).catch(() => caches.match(key).then((hit) => hit || new Response("Offline — open this page once while online.", { status: 503 }))),
     );
   }
 });

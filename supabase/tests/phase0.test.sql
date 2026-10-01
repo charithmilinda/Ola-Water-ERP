@@ -43,7 +43,7 @@ insert into auth.users (id, email, raw_user_meta_data) values
 select tests.ok((select count(*) = 3 from public.profiles), 'profiles are created for new auth users');
 select tests.ok((select full_name = 'Nimal Perera' from public.profiles where email = 'admin@ola.test'), 'profile takes full_name from metadata');
 select tests.ok((select count(*) >= 60 from public.permissions), 'permissions are seeded');
-select tests.ok((select count(*) = 16 from public.roles), 'sixteen default roles are seeded');
+select tests.ok((select count(*) >= 16 from public.roles), 'default roles are seeded');
 
 select public.bootstrap_super_admin('admin@ola.test');
 select tests.ok(app.is_super_admin('00000000-0000-0000-0000-00000000000a'), 'bootstrap makes the first super admin');

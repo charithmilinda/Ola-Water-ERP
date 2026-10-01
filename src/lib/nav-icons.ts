@@ -1,4 +1,7 @@
 import {
+  Calculator,
+  PackageCheck,
+  Store,
   Boxes,
   Circle,
   ClipboardList,
@@ -39,6 +42,9 @@ export const NAV_ICONS = {
   Route,
   Boxes,
   Package,
+  Store,
+  PackageCheck,
+  Calculator,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

@@ -20,8 +20,12 @@ type Dash = {
   deliveries: { total: number; completed: number; failed: number; pending: number };
   runs_out: number;
   customer_outstanding: number;
+  shop_outstanding: number;
+  shop_sales_today: number;
+  shops_pending_requests: number;
+  shops_in_transit: number;
   overdue: number;
-  bottles: { warehouse_full: number; warehouse_empty: number; on_vehicles: number; with_customers: number; external_held: number; external_on_vehicles: number };
+  bottles: { warehouse_full: number; warehouse_empty: number; on_vehicles: number; at_shops: number; with_customers: number; external_held: number; external_on_vehicles: number };
   exceptions: { critical: number; warning: number; info: number };
   external_alerts: { company: string; held: number; limit: number }[];
   sales_14d: { date: string; sales: number; deliveries: number }[];
@@ -34,6 +38,8 @@ export default async function DashboardPage() {
   if (!can(access, "dashboard.view")) {
     // drivers go straight to their app
     if (access.permissions.includes("driver.app") && access.permissions.length <= 2) redirect("/driver");
+    // shop staff go to their shop
+    if (access.permissions.length === 0 && access.scoped.some((x) => x.permission === "shop_pos.use")) redirect("/shops");
     return <Welcome />;
   }
 
@@ -46,6 +52,7 @@ export default async function DashboardPage() {
   const alerts: { tone: "error" | "warning"; text: string; href: string }[] = [];
   if (d.exceptions.critical > 0) alerts.push({ tone: "error", text: `${d.exceptions.critical} critical exception(s) — missing bottles, stock or cash`, href: "/exceptions" });
   if (d.orders_on_hold > 0) alerts.push({ tone: "warning", text: `${d.orders_on_hold} order(s) on hold for credit or bottle limits`, href: "/orders?status=on_hold" });
+  if (d.shops_pending_requests > 0) alerts.push({ tone: "warning", text: `${d.shops_pending_requests} shop stock request(s) waiting for approval or dispatch`, href: "/shops/requests" });
   if (d.deliveries.failed > 0) alerts.push({ tone: "warning", text: `${d.deliveries.failed} failed delivery(ies) today`, href: "/dispatch" });
   d.external_alerts.forEach((a) =>
     alerts.push({ tone: "warning", text: `${a.company}: ${a.held} bottles held (alert at ${a.limit}) — arrange a hand-over`, href: "/bottles/external" }),
@@ -71,15 +78,16 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Stat label="Sales today" value={formatLKR(d.sales_today)} hint={`${d.invoices_today} invoice(s), incl. VAT, excl. deposits`} />
         <Stat label="Collected today" value={formatLKR(d.collected_today)} hint="All payment methods" />
         <Stat label="Deliveries today" value={`${n(d.deliveries.completed)} / ${n(d.deliveries.total)}`} hint={`${d.deliveries.pending} pending · ${d.deliveries.failed} failed · ${d.runs_out} vehicle(s) out`} />
         <Stat label="Orders to dispatch" value={n(d.orders_to_dispatch)} hint={`${d.orders_today} new today · ${d.orders_on_hold} on hold`} />
         <Stat label="Customers owe" value={formatLKR(d.customer_outstanding)} hint={`${formatLKR(d.overdue)} overdue`} />
-        <Stat label="Warehouse bottles" value={`${n(d.bottles.warehouse_full)} full`} hint={`${n(d.bottles.warehouse_empty)} empty · ${n(d.bottles.on_vehicles)} on vehicles`} />
+        <Stat label="Water shops today" value={formatLKR(d.shop_sales_today)} hint={`Dealers owe ${formatLKR(d.shop_outstanding)} · ${d.shops_in_transit} delivery(ies) in transit`} />
+        <Stat label="Warehouse bottles" value={`${n(d.bottles.warehouse_full)} full`} hint={`${n(d.bottles.warehouse_empty)} empty · ${n(d.bottles.on_vehicles)} on vehicles · ${n(d.bottles.at_shops ?? 0)} at shops`} />
         <Stat label="OLA bottles with customers" value={n(d.bottles.with_customers)} hint="Loaned or under deposit" />
-        <Stat label="External bottles held" value={n(d.bottles.external_held)} hint={`${n(d.bottles.external_on_vehicles)} more on vehicles`} />
+        <Stat label="External bottles held" value={n(d.bottles.external_held)} hint={`${n(d.bottles.external_on_vehicles)} more on vehicles and at shops`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

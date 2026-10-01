@@ -41,7 +41,7 @@ export async function Welcome() {
     stats.push({ label: "Active users", value: count ?? 0, hint: "Staff who can sign in" });
   }
 
-  const modules = visibleNav(access.is_super_admin, access.permissions)
+  const modules = visibleNav(access.is_super_admin, access.permissions, access.scoped.map((x) => x.permission))
     .flatMap((g) => g.items)
     .filter((i) => i.href !== "/");
 

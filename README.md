@@ -14,10 +14,21 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 |---|---|---|
 | **0 — Foundation** | Auth, roles & permissions, RLS, audit trail, document numbering, settings, barcode/label service, accounting core (ledger + posting rules) | **Done** |
 | **1A — Core bottle & delivery loop** | Customers, products & prices, VAT, inventory, bottles, external bottles, deposits, orders, recurring orders, dispatch, driver app (offline), check-in reconciliation, receipts, dashboard | **Done** |
-| 1B — Water shops & POS | Shops, shop POS, settlements, head-office POS | Next |
-| 2 — Operations & finance | Production, QC, procurement, accounting UI, HR, fleet | |
+| **1B — Water shops & POS** | Water shops (company-owned and dealer), stock requests, shop till (offline), head-office counter, daily till closing, settlements, shop statements | **Done** |
+| 2 — Operations & finance | Production, QC, procurement, accounting UI, HR, fleet | Next |
 | 3 — Commercial & control | Distributors, CRM, complaints, notifications, documents, approvals | |
 | 4 — Intelligence | AI assistant, analytics, forecasting | |
+
+### What Phase 1B adds
+
+- **Water shops** — each shop is set as **company-owned** (OLA's stock, OLA's sales, staff paid commission) or **dealer** (the dealer buys stock from OLA at transfer prices and sells under their own name). Each shop gets its own stock location, a pooled walk-in customer and (for dealers) a credit account.
+- **Stock requests** — shop asks → office approves (dealer credit is checked) → warehouse dispatches (stock shows as *in transit*) → shop counts what arrived. Any difference becomes an exception; dealers are invoiced only for what they received.
+- **Till** (`/pos`, works offline on a tablet, phone or PC) — product tiles, barcode scanning, walk-in or registered customers at their own prices, OLA and other-company empties, deposits and refunds, split payments, change, 80 mm receipt. Receipt numbers are made on the device so the till keeps selling without internet; sales sync exactly once.
+- **Head-office counter** — the same till at the warehouse/office for counter sales (new role *Counter Cashier*).
+- **Closing the till** — blind count of cash, stock and bottles; every difference becomes an exception (found / cashier owes / write off).
+- **Settlements** — company-owned shops bank their takings and accrue commission; dealers pay OLA on account. Printable **shop statement** (Save as PDF) for any period.
+- **Shop staff only see their own shop** — roles can be limited to a location.
+- **Dashboard** — shop sales today, what dealers owe, requests waiting, stock in transit, bottles at shops.
 
 ### What Phase 1A adds
 
@@ -97,7 +108,7 @@ Import the repository in Vercel and add the same three environment variables. `S
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + database tests (Phase 0, Phase 1A scenarios) on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0, 1A and 1B scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build

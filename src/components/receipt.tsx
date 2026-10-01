@@ -1,7 +1,10 @@
-// 80 mm thermal receipt. Used by the office print page and the driver app.
+// 80 mm thermal receipt. Used by the office print page, the driver app and the tills.
 
 export type ReceiptData = {
   invoice_no: string | null;
+  receipt_no?: string | null;
+  location?: string | null;
+  is_walk_in?: boolean;
   invoice_date?: string;
   created_at?: string;
   is_tax_invoice?: boolean;
@@ -26,7 +29,7 @@ export type ReceiptData = {
   bottles?: Bottles;
   pending_sync?: boolean;
 };
-type Bottles = { issued?: Record<string, number>; returned?: Record<string, number>; external?: { company: string; qty: number }[]; balance?: number };
+type Bottles = { issued?: Record<string, number>; returned?: Record<string, number>; external?: { company: string; qty: number }[]; balance?: number | null };
 
 const rs = (n: number | string | null | undefined) =>
   Number(n ?? 0).toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -53,10 +56,16 @@ export function Receipt80({ r }: { r: ReceiptData }) {
         {r.pending_sync && <div className="font-bold">*** NOT YET SYNCED ***</div>}
       </div>
       <div className="my-2 border-t border-dashed border-black" />
-      <div className="flex justify-between"><span>No:</span><span>{r.invoice_no ?? "Pending"}</span></div>
+      {r.receipt_no && <div className="flex justify-between"><span>Receipt:</span><span>{r.receipt_no}</span></div>}
+      {(r.invoice_no || !r.receipt_no) && <div className="flex justify-between"><span>{r.receipt_no ? "Invoice:" : "No:"}</span><span>{r.invoice_no ?? "Pending"}</span></div>}
+      {r.location && <div className="flex justify-between"><span>At:</span><span className="text-right">{r.location}</span></div>}
       <div className="flex justify-between"><span>Date:</span><span>{when(r)}</span></div>
-      <div className="flex justify-between"><span>Customer:</span><span className="text-right">{r.customer.name}</span></div>
-      <div className="flex justify-between"><span>Cust No:</span><span>{r.customer.customer_no}</span></div>
+      {!r.is_walk_in && (
+        <>
+          <div className="flex justify-between"><span>Customer:</span><span className="text-right">{r.customer.name}</span></div>
+          <div className="flex justify-between"><span>Cust No:</span><span>{r.customer.customer_no}</span></div>
+        </>
+      )}
       {r.customer.vat_no && <div className="flex justify-between"><span>Cust VAT:</span><span>{r.customer.vat_no}</span></div>}
       {r.staff && <div className="flex justify-between"><span>Served by:</span><span>{r.staff}</span></div>}
       <div className="my-2 border-t border-dashed border-black" />
@@ -74,10 +83,14 @@ export function Receipt80({ r }: { r: ReceiptData }) {
         </>
       )}
       <div className="flex justify-between text-[13px] font-bold"><span>TOTAL Rs.</span><span>{rs(r.total)}</span></div>
-      {paid > 0 && <div className="flex justify-between"><span>Paid ({method?.replace("_", " ")})</span><span>{rs(paid)}</span></div>}
+      {(r.payments ?? []).length > 1 || (r.payments ?? []).some((p) => Number(p.amount) < 0)
+        ? (r.payments ?? []).map((p, i) => (
+            <div key={i} className="flex justify-between"><span>{Number(p.amount) < 0 ? "Refunded (cash)" : `Paid (${p.method.replace("_", " ")})`}</span><span>{rs(Math.abs(Number(p.amount)))}</span></div>
+          ))
+        : paid > 0 && <div className="flex justify-between"><span>Paid ({method?.replace("_", " ")})</span><span>{rs(paid)}</span></div>}
       {r.tendered ? <div className="flex justify-between"><span>Tendered</span><span>{rs(r.tendered)}</span></div> : null}
       {r.change ? <div className="flex justify-between"><span>Change</span><span>{rs(r.change)}</span></div> : null}
-      <div className="flex justify-between font-bold"><span>Your balance</span><span>{rs(r.outstanding)}</span></div>
+      {!r.is_walk_in && <div className="flex justify-between font-bold"><span>Your balance</span><span>{rs(r.outstanding)}</span></div>}
       {b && (
         <>
           <div className="my-2 border-t border-dashed border-black" />
@@ -87,7 +100,7 @@ export function Receipt80({ r }: { r: ReceiptData }) {
           {(b.external ?? []).length > 0 && (
             <div className="flex justify-between"><span>Other bottles taken</span><span>{(b.external ?? []).map((e) => `${e.company} ${e.qty}`).join(", ")}</span></div>
           )}
-          <div className="flex justify-between font-bold"><span>OLA bottles you hold</span><span>{b.balance ?? r.ola_bottles ?? 0}</span></div>
+          {!r.is_walk_in && b.balance !== null && <div className="flex justify-between font-bold"><span>OLA bottles you hold</span><span>{b.balance ?? r.ola_bottles ?? 0}</span></div>}
         </>
       )}
       <div className="my-2 border-t border-dashed border-black" />

@@ -2,6 +2,32 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 1B — Water shops & POS (October 2026)
+
+**D-1B-01 · Two shop models, chosen per shop.** *Company-owned*: stock and sales belong to OLA (OLA invoices, VAT and journals; takings banked on settlement; commission accrued to `2510 Shop Commissions Payable` / `6210 Shop Commissions`). *Dealer*: stock is invoiced to the dealer's account at the **transfer price list** when the dealer confirms receipt; the dealer's own till sales create no OLA invoice or journal (`p_post = false`) but stock and bottles are still tracked so OLA knows what is at every shop. Receipts at dealer shops carry the dealer's name, not OLA's VAT number.
+
+**D-1B-02 · Location-limited roles.** A role assignment limited to a location now only grants rights at that location: `app.has_permission()` answers for unlimited grants only, `app.has_permission_at(code, location)` for a specific place. Shop staff therefore see only their own shop (RLS and every shop RPC check the location). Menu items marked "anywhere" appear when the user has the right at any location.
+
+**D-1B-03 · One selling engine.** The pricing, VAT, deposit, bottle and stock logic used by the driver's delivery was moved into `app.sale_core` and is now shared by deliveries and the till, so a bottle or deposit rule behaves the same everywhere. All Phase 1A tests pass unchanged on top of it.
+
+**D-1B-04 · Walk-in customers.** Each shop/counter has one pooled walk-in customer. Walk-in bottle deposits are held against that pool, so a walk-in can return a bottle bought at the same shop and get the deposit back. Walk-ins are hidden from the customer list.
+
+**D-1B-05 · Stock in transit.** Dispatched shop stock moves to a system location `TRN` (In Transit) until the shop counts it in, so nothing is "nowhere" between warehouse and shop.
+
+**D-1B-06 · Offline receipt numbers** (spec D-4.5). Each till session has a unique prefix (`R` + location code + year + session, e.g. `RSH01-260007`); the device numbers receipts within it (`RSH01-260007-0012`). No two devices can produce the same number and no central call is needed to sell.
+
+**D-1B-07 · One open till per location.** Opening and closing need internet; selling does not. A till cannot be closed while sales from it are still waiting on the device.
+
+**D-1B-08 · Tills never refuse a sale for business reasons after the fact.** A sale made offline that breaks a rule when it syncs (credit limit, discount limit, short stock) is still recorded — the money and bottles really changed hands — and the problem is raised as a flag/exception for a manager. Only invalid data (unknown product, closed till) is refused.
+
+**D-1B-09 · Refunds are real payments out.** `payments.direction = 'out'` records deposit refunds paid in cash; customer balances are net of refunds.
+
+**D-1B-10 · Exceptions are generalised.** Exceptions now also cover shops, transit and tills (`target_location_id` = where missing items should have gone). Resolving "found" on a transfer shortage moves the goods to the shop (and invoices a dealer for them).
+
+### Not verified in this phase
+- All database flows were tested on PostgreSQL 16 (company-owned shop full day, dealer shop, head-office counter, location limits, offline replay). Screens were type-checked and production-built but not clicked through against the live Supabase project — do the first-time checks in the guide.
+- Print the shop statement and a till receipt on the real printers before go-live.
+
 ## Phase 1A — Core bottle & delivery loop (October 2026)
 
 **D-101 · Two ledgers.** Filled product stock (`inventory_*`) and returnable containers (`bottle_*`) are separate ledgers. Moving a returnable product (e.g. 19L) automatically moves the same number of full OLA bottles in count mode.

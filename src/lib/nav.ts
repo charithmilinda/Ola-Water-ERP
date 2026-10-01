@@ -6,6 +6,8 @@ export type NavItem = {
   icon: NavIconName;
   /** Any one of these permissions shows the item. Empty = every signed-in user. */
   permissions: string[];
+  /** Also shown to staff who hold the permission only at their own location. */
+  anywhere?: boolean;
 };
 
 export type NavGroup = { label: string; items: NavItem[] };
@@ -32,9 +34,17 @@ export const NAV: NavGroup[] = [
     label: "Delivery",
     items: [
       { href: "/dispatch", label: "Dispatch & Runs", icon: "Truck", permissions: ["deliveries.view", "deliveries.manage"] },
-      { href: "/exceptions", label: "Exceptions", icon: "TriangleAlert", permissions: ["deliveries.reconcile", "bottles.view"] },
+      { href: "/exceptions", label: "Exceptions", icon: "TriangleAlert", permissions: ["deliveries.reconcile", "bottles.view", "shops.settle", "inventory.adjust"] },
       { href: "/routes", label: "Routes & Vehicles", icon: "Route", permissions: ["routes.manage", "fleet.manage"] },
       { href: "/driver", label: "Driver App", icon: "Truck", permissions: ["driver.app"] },
+    ],
+  },
+  {
+    label: "Water Shops",
+    items: [
+      { href: "/shops", label: "Shops", icon: "Store", permissions: ["shops.view", "shop_pos.use"], anywhere: true },
+      { href: "/shops/requests", label: "Stock Requests", icon: "PackageCheck", permissions: ["shops.stock_approve", "inventory.manage"] },
+      { href: "/pos", label: "Till / POS", icon: "Calculator", permissions: ["pos.use", "shop_pos.use"], anywhere: true },
     ],
   },
   {
@@ -63,11 +73,15 @@ export const NAV: NavGroup[] = [
   },
 ];
 
-export function visibleNav(isSuperAdmin: boolean, permissions: string[]): NavGroup[] {
+export function visibleNav(isSuperAdmin: boolean, permissions: string[], scopedPermissions: string[] = []): NavGroup[] {
   return NAV.map((g) => ({
     ...g,
     items: g.items.filter(
-      (i) => i.permissions.length === 0 || isSuperAdmin || i.permissions.some((p) => permissions.includes(p)),
+      (i) =>
+        i.permissions.length === 0 ||
+        isSuperAdmin ||
+        i.permissions.some((p) => permissions.includes(p)) ||
+        (i.anywhere && i.permissions.some((p) => scopedPermissions.includes(p))),
     ),
   })).filter((g) => g.items.length > 0);
 }

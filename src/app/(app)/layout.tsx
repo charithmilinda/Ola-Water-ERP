@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const access = await getAccess();
-  const groups: ClientNavGroup[] = visibleNav(access.is_super_admin, access.permissions);
+  const groups: ClientNavGroup[] = visibleNav(access.is_super_admin, access.permissions, access.scoped.map((x) => x.permission));
 
   return (
     <div className="flex min-h-dvh">
