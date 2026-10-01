@@ -14,7 +14,7 @@ export async function saveProduct(_p: ActionResult, f: FormData): Promise<Action
       name: str(f, "name"),
       category: str(f, "category") || "water",
       size_label: str(f, "size_label"),
-      unit: str(f, "unit") || "bottle",
+      unit: str(f, "unit") || (str(f, "item_type") && str(f, "item_type") !== "finished_good" ? "piece" : "bottle"),
       units_per_pack: str(f, "units_per_pack") || "1",
       barcode: str(f, "barcode"),
       is_returnable: f.get("is_returnable") === "on",
@@ -23,9 +23,12 @@ export async function saveProduct(_p: ActionResult, f: FormData): Promise<Action
       cost_price: str(f, "cost_price") || "0",
       sort_order: str(f, "sort_order") || "0",
       is_active: id ? f.get("is_active") === "on" : true,
+      item_type: str(f, "item_type") || "finished_good",
+      reorder_level: str(f, "reorder_level") || "0",
+      shelf_life_days: str(f, "shelf_life_days") || null,
     },
     p_reason: str(f, "reason") || (id ? null : "New product"),
-  }, id ? "Product saved." : "Product added.", P);
+  }, id ? "Saved." : "Added.", [...P, "/materials", "/inventory"]);
 }
 
 export async function setPrices(_p: ActionResult, f: FormData): Promise<ActionResult> {

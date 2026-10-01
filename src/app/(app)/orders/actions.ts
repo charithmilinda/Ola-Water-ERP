@@ -29,7 +29,7 @@ export async function customerPricing(customerId: string): Promise<Pricing | nul
   const today = todayISO();
   const [{ data: addresses }, { data: products }, { data: items }, { data: list }, { data: summary }] = await Promise.all([
     supabase.from("customer_addresses").select("id, label, address_line, is_default").eq("customer_id", customerId).eq("is_active", true),
-    supabase.from("products").select("id, name, sku, is_returnable").eq("is_active", true).order("sort_order"),
+    supabase.from("products").select("id, name, sku, is_returnable").eq("is_active", true).eq("item_type", "finished_good").order("sort_order"),
     supabase.from("price_list_items").select("product_id, unit_price, effective_from").eq("price_list_id", c.price_list_id).lte("effective_from", today).order("effective_from", { ascending: false }),
     supabase.from("price_lists").select("prices_include_tax").eq("id", c.price_list_id).single(),
     supabase.rpc("customer_summary", { p_customer: customerId }),

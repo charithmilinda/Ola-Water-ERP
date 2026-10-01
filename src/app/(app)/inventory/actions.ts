@@ -3,11 +3,12 @@
 import { runRpc, payload } from "@/lib/rpc";
 import { str, type ActionResult } from "@/lib/actions";
 
-const P = ["/inventory", "/"];
+const P = ["/inventory", "/", "/materials"];
 
 export async function receiveStock(_p: ActionResult, f: FormData): Promise<ActionResult> {
-  const d = payload<{ location: string; source: string; reason: string; lines: { product_id: string; qty: string }[] }>(f);
-  return runRpc("receive_stock", { p_location: d.location, p_lines: d.lines.filter((l) => Number(l.qty) > 0), p_source: d.source, p_reason: d.reason,
+  const d = payload<{ location: string; source: string; reason: string; lines: { product_id: string; qty: string; unit_cost: string | null }[] }>(f);
+  return runRpc("receive_stock", { p_location: d.location, p_source: d.source, p_reason: d.reason,
+    p_lines: d.lines.filter((l) => Number(l.qty) > 0).map((l) => ({ product_id: l.product_id, qty: Number(l.qty), unit_cost: l.unit_cost ? Number(l.unit_cost) : null })),
     p_client_txn_id: str(f, "client_txn_id") }, "Stock received.", P);
 }
 

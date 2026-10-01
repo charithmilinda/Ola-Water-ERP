@@ -27,7 +27,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const [{ data: stops }, { data: suggested }, { data: products }, { data: stock }, { data: vstock }, { data: vbottles }, { data: companies }, { data: types }, { data: cashPay }, { data: exceptions }] = await Promise.all([
     supabase.from("deliveries").select("id, delivery_no, stop_sequence, status, failure_reason, completed_at, invoice_id, summary, customer:customers(id, name, phone)").eq("run_id", id).order("stop_sequence"),
     r.status === "planned" ? supabase.rpc("run_suggested_load", { p_run: id }) : Promise.resolve({ data: [] }),
-    supabase.from("products").select("id, name").eq("is_active", true).order("sort_order"),
+    supabase.from("products").select("id, name").eq("is_active", true).eq("item_type", "finished_good").order("sort_order"),
     supabase.from("inventory_balances").select("product_id, qty").eq("location_id", r.load_location_id).eq("stock_status", "available"),
     supabase.from("inventory_balances").select("product_id, qty").eq("location_id", vehLoc).eq("stock_status", "available").gt("qty", 0),
     supabase.from("bottle_balances").select("company_id, bottle_type_id, fill_state, qty").eq("holder_type", "location").eq("holder_id", vehLoc).neq("qty", 0),

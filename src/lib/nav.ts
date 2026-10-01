@@ -56,6 +56,21 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Production",
+    items: [
+      { href: "/production", label: "Production", icon: "Factory", permissions: ["production.view"] },
+      { href: "/quality", label: "Quality Control", icon: "FlaskConical", permissions: ["qc.view"] },
+      { href: "/materials", label: "Materials", icon: "Layers", permissions: ["products.view", "production.view", "procurement.view"] },
+    ],
+  },
+  {
+    label: "Purchasing",
+    items: [
+      { href: "/purchasing", label: "Purchasing", icon: "ShoppingCart", permissions: ["procurement.view", "inventory.manage"] },
+      { href: "/suppliers", label: "Suppliers", icon: "Building2", permissions: ["procurement.view", "suppliers.manage", "payments.view"] },
+    ],
+  },
+  {
     label: "Operations",
     items: [
       { href: "/inventory", label: "Inventory", icon: "Boxes", permissions: ["inventory.view"] },

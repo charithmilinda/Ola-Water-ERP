@@ -53,3 +53,10 @@ export function humanize(code: string | null | undefined): string {
   if (!code) return "—";
   return code.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+/** Quantities: whole numbers stay whole, materials show up to 3 decimals. */
+export function formatQty(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "—";
+  const n = typeof value === "string" ? Number(value) : value;
+  return n.toLocaleString("en-LK", { maximumFractionDigits: 3 });
+}

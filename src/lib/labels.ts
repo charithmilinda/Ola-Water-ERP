@@ -83,6 +83,77 @@ export const FAIL_REASONS = [
   "Other",
 ];
 
+export const BATCH_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  planned: { label: "Planned", tone: "neutral" },
+  in_production: { label: "In production", tone: "blue" },
+  qc_hold: { label: "QC hold", tone: "amber" },
+  released: { label: "Released", tone: "green" },
+  failed: { label: "Failed QC", tone: "red" },
+  recalled: { label: "Recalled", tone: "red" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+};
+
+export const PR_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  submitted: { label: "Waiting approval", tone: "amber" },
+  approved: { label: "Approved", tone: "blue" },
+  rejected: { label: "Rejected", tone: "red" },
+  ordered: { label: "Ordered", tone: "green" },
+  cancelled: { label: "Withdrawn", tone: "neutral" },
+};
+
+export const PO_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  pending_approval: { label: "Waiting approval", tone: "amber" },
+  approved: { label: "Ordered", tone: "blue" },
+  partially_received: { label: "Part received", tone: "amber" },
+  received: { label: "Received", tone: "green" },
+  closed: { label: "Closed", tone: "neutral" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+};
+
+export const SUPPLIER_INVOICE_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  on_hold: { label: "On hold — mismatch", tone: "red" },
+  approved: { label: "To pay", tone: "amber" },
+  partially_paid: { label: "Part paid", tone: "amber" },
+  paid: { label: "Paid", tone: "green" },
+  void: { label: "Void", tone: "neutral" },
+};
+
+export const ITEM_TYPES = [
+  ["raw_material", "Raw material"],
+  ["packaging", "Packaging (caps, labels, preforms)"],
+  ["chemical", "Chemical"],
+  ["consumable", "Consumable (filters, cleaning)"],
+  ["spare_part", "Spare part"],
+] as const;
+
+export const UNITS = [
+  ["piece", "Piece"], ["kg", "Kg"], ["g", "Gram"], ["litre", "Litre"], ["ml", "ml"], ["roll", "Roll"], ["box", "Box"],
+  ["pack", "Pack"], ["metre", "Metre"], ["set", "Set"], ["unit", "Unit"],
+] as const;
+
+export const PRODUCTION_STAGES = [
+  ["raw_water", "Raw water"],
+  ["filtration", "Filtration"],
+  ["ro", "Reverse osmosis"],
+  ["uv", "UV"],
+  ["ozone", "Ozone"],
+  ["storage", "Storage tank"],
+  ["washing", "Bottle washing / sanitising"],
+  ["filling", "Filling"],
+  ["capping", "Capping"],
+  ["labelling", "Labelling"],
+  ["finished", "Finished goods"],
+] as const;
+
+export const SHIFTS = [["morning", "Morning"], ["day", "Day"], ["evening", "Evening"], ["night", "Night"]] as const;
+
+export const STOCK_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  available: { label: "Available", tone: "green" },
+  qc_hold: { label: "QC hold", tone: "amber" },
+  quarantine: { label: "Quarantine", tone: "red" },
+  damaged: { label: "Damaged", tone: "neutral" },
+};
+
 export function statusBadge(map: Record<string, { label: string; tone: BadgeTone }>, s: string) {
   return map[s] ?? { label: s.replace(/_/g, " "), tone: "neutral" as BadgeTone };
 }

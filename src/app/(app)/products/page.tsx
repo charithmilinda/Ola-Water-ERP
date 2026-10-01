@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: "Products & Prices" };
 type Product = {
   id: string; sku: string; name: string; category: string; size_label: string | null; unit: string; units_per_pack: number;
   barcode: string | null; is_returnable: boolean; bottle_type_id: string | null; tax_code: string | null; cost_price: number;
-  sort_order: number; is_active: boolean;
+  sort_order: number; is_active: boolean; shelf_life_days: number | null; reorder_level: number;
 };
 
 function latest<T extends { effective_from: string }>(rows: T[], today: string) {
@@ -35,7 +35,7 @@ export default async function ProductsPage() {
   const today = todayISO();
   const [{ data: products }, { data: lists }, { data: items }, { data: taxCodes }, { data: taxRates }, { data: types }, { data: companies }, { data: values }, { data: typeDefaults }] =
     await Promise.all([
-      supabase.from("products").select("*").order("sort_order").order("name"),
+      supabase.from("products").select("*").eq("item_type", "finished_good").order("sort_order").order("name"),
       supabase.from("price_lists").select("id, code, name, prices_include_tax").eq("is_active", true).order("name"),
       supabase.from("price_list_items").select("price_list_id, product_id, unit_price, effective_from"),
       supabase.from("tax_codes").select("code, name").eq("is_active", true),
@@ -96,8 +96,14 @@ export default async function ProductsPage() {
             ))}
           </Select>
         </Field>
-        <Field label="Cost price (Rs.)" htmlFor={`cost-${p?.id ?? "new"}`} hint="Used for cost of sales">
-          <Input id={`cost-${p?.id ?? "new"}`} name="cost_price" type="number" step="0.01" min={0} defaultValue={p?.cost_price ?? 0} />
+        <Field label="Average cost (Rs.)" htmlFor={`cost-${p?.id ?? "new"}`} hint="Set before go-live; afterwards production and purchases keep it up to date">
+          <Input id={`cost-${p?.id ?? "new"}`} name="cost_price" type="number" step="0.0001" min={0} defaultValue={p?.cost_price ?? 0} />
+        </Field>
+        <Field label="Shelf life (days)" htmlFor={`sl-${p?.id ?? "new"}`} hint="Sets the expiry date of each production batch">
+          <Input id={`sl-${p?.id ?? "new"}`} name="shelf_life_days" type="number" min={1} defaultValue={p?.shelf_life_days ?? ""} />
+        </Field>
+        <Field label="Reorder / low-stock level" htmlFor={`rl-${p?.id ?? "new"}`} hint="Warn when stock falls to this">
+          <Input id={`rl-${p?.id ?? "new"}`} name="reorder_level" type="number" min={0} defaultValue={p?.reorder_level ?? 0} />
         </Field>
         <Field label="Returnable bottle type" htmlFor={`bt-${p?.id ?? "new"}`} hint="Tick 'Returnable' below too">
           <Select id={`bt-${p?.id ?? "new"}`} name="bottle_type_id" defaultValue={p?.bottle_type_id ?? ""}>
@@ -135,7 +141,7 @@ export default async function ProductsPage() {
     <>
       <PageHeader
         title="Products & Prices"
-        description="Products, price lists, VAT and bottle deposits. Every price change takes effect from a date and the history is kept."
+        description="Products for sale, price lists, VAT and bottle deposits. Every price change takes effect from a date and the history is kept. Materials (caps, labels, chemicals) are under Production → Materials."
         actions={
           canManage && (
             <FormDialog trigger={<><Plus className="h-4 w-4" /> New product</>} triggerVariant="primary" triggerSize="md" title="New product" submitLabel="Add product" action={saveProduct} wide>
@@ -187,7 +193,7 @@ export default async function ProductsPage() {
                     {p.units_per_pack > 1 && ` × ${p.units_per_pack}`}
                   </Td>
                   <Td>{p.tax_code}</Td>
-                  <Td className="num text-right">{formatLKR(p.cost_price)}</Td>
+                  <Td className="num text-right">{formatLKR(p.cost_price)}{p.shelf_life_days && <span className="block text-xs text-muted">{p.shelf_life_days} days shelf life</span>}</Td>
                   {lists?.map((l) => (
                     <Td key={l.id} className="num text-right">
                       {current[l.id]?.[p.id] !== undefined ? formatLKR(current[l.id][p.id]) : <span className="text-muted">—</span>}

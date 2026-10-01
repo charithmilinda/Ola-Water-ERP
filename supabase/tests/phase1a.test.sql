@@ -81,7 +81,8 @@ select tests.throws($$select public.register_bottles(array['OLA-BTL-00000001'], 
 reset role;
 update public.products set cost_price = 120 where sku = 'OLA-19L';
 update public.products set cost_price = 60 where sku = 'OLA-5L';
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e1', false);
+-- from Phase 2A only someone who may release QC batches can receive water without a production batch
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
 set role authenticated;
 select public.receive_stock((select id from public.locations where code = 'WH1'),
   jsonb_build_array(jsonb_build_object('product_id', (select id from public.products where sku = 'OLA-19L'), 'qty', 20)),

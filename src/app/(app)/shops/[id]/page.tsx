@@ -59,7 +59,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
   const dealer = s.operating_model === "dealer";
   const atShop = can(access, "shop_pos.use") || access.scoped.some((x) => x.permission === "shop_pos.use" && x.location_id === s.location_id);
   const [{ data: products }, { data: lists }, reqItems] = await Promise.all([
-    supabase.from("products").select("id, name").eq("is_active", true).order("sort_order"),
+    supabase.from("products").select("id, name").eq("is_active", true).eq("item_type", "finished_good").order("sort_order"),
     supabase.from("price_lists").select("id, name, code").eq("is_active", true).order("name"),
     supabase.from("shop_stock_request_items").select("request_id, product_id, dispatched_qty, product:products(name)")
       .in("request_id", d.requests.filter((r) => r.status === "dispatched").map((r) => r.id).concat(["00000000-0000-0000-0000-000000000000"])),

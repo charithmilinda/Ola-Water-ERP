@@ -2,6 +2,34 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 2A — Production, QC & purchasing (October 2026)
+
+**D-2A-01 · Phase 2 is delivered in three parts** (2A production/QC/purchasing, 2B finance, 2C people & assets) so each part can be tested in the live system before the next.
+
+**D-2A-02 · Materials are items in the same table as products** (`products.item_type`), so they share the stock ledger, counts, transfers and valuation. Only `finished_good` items can be sold — enforced in the stock ledger itself (`app.stock_move` refuses a sale of a material) and tills/order screens only list finished goods.
+
+**D-2A-03 · Stock statuses.** `available`, `qc_hold`, `quarantine`, `damaged`. Every pick, load-out, transfer and sale takes only `available`, so stock on hold or in quarantine cannot leave by any route.
+
+**D-2A-04 · Batch (lot) tracking on every movement.** `inventory_lots` splits each balance by production batch; movements take the oldest batch first (FIFO) unless a batch is named, and each ledger row records its batch. Stock that existed before go-live has no batch. A test proves lots always add up to the balances. Shop tills selling more than their recorded stock (allowed offline, see D-1B-08) create unbatched stock that is flagged as an exception.
+
+**D-2A-05 · Water enters stock only through a production batch** (setting `production.allow_manual_receipt`, off). A user who may release QC batches (`qc.release`) can still record a manual fill as an exception; opening stock at go-live is still allowed.
+
+**D-2A-06 · Release rules.** A QC officer (`qc.manage`) can release a batch whose latest test passed. Anything else (no test, failed test, failed batch) needs `qc.release` plus a reason, and is recorded as `qc_override_release` in the audit trail. QC tests and results are append-only; each result keeps a copy of the limits used.
+
+**D-2A-07 · Recalls.** Stock at warehouses and shops is quarantined immediately; stock on vehicles is listed for the driver to bring back and is caught by "Secure stock again". Customers are identified from deliveries and till sales of the batch and from traced bottles they hold. Units collected from customers return to quarantine; credit notes for them come with Phase 2B.
+
+**D-2A-08 · Costing.** Weighted average cost, updated by goods received (order price before VAT) and by production (materials used ÷ good units). Rejected units' materials are absorbed into the good units' cost; if nothing good is produced the materials go to Production Losses. Average cost can only be typed in by hand while an item has no stock.
+
+**D-2A-09 · Purchase accounting.** Goods received: Dr Inventory / Cr Goods Received Not Invoiced (GRNI, 2110). Supplier invoice: Dr GRNI at order price, the difference to Purchase Price Variance (5200), Dr VAT Input / Cr Accounts Payable. Payment: Dr AP / Cr Bank or Cash. GRNI returns to zero once everything received is invoiced. Cheque lifecycle (issued/cleared) comes with Phase 2B.
+
+**D-2A-10 · 3-way match tolerance.** An invoice line matches when its quantity is within what was received and not yet billed, its price is within `procurement.price_tolerance_percent` (2%) of the order price and its VAT rate equals the order's. Otherwise the whole invoice is held for `procurement.approve`; a rejected invoice is voided and its quantities released. Purchase orders below `approvals.purchase_amount` (Rs. 100,000) are approved on creation.
+
+**D-2A-11 · Not in 2A:** bin locations inside a warehouse, supplier lot traceability through production (supplier lot and expiry are recorded on goods received only), purchase returns after acceptance, and non-stock purchases (services go through Expenses in 2B).
+
+### Not verified in this phase
+- All flows above were tested against PostgreSQL 16 (scenario 5 pass and fail, full purchase cycle, recall, FIFO, costing, ledger balance), and the screens were type-checked and production-built, but not clicked through against the live Supabase project — use the first-time checks in the guide.
+- QC certificate upload needs the storage bucket created by the update (it is skipped if Supabase storage is unavailable).
+
 ## Phase 1B — Water shops & POS (October 2026)
 
 **D-1B-01 · Two shop models, chosen per shop.** *Company-owned*: stock and sales belong to OLA (OLA invoices, VAT and journals; takings banked on settlement; commission accrued to `2510 Shop Commissions Payable` / `6210 Shop Commissions`). *Dealer*: stock is invoiced to the dealer's account at the **transfer price list** when the dealer confirms receipt; the dealer's own till sales create no OLA invoice or journal (`p_post = false`) but stock and bottles are still tracked so OLA knows what is at every shop. Receipts at dealer shops carry the dealer's name, not OLA's VAT number.

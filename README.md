@@ -15,9 +15,22 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 | **0 — Foundation** | Auth, roles & permissions, RLS, audit trail, document numbering, settings, barcode/label service, accounting core (ledger + posting rules) | **Done** |
 | **1A — Core bottle & delivery loop** | Customers, products & prices, VAT, inventory, bottles, external bottles, deposits, orders, recurring orders, dispatch, driver app (offline), check-in reconciliation, receipts, dashboard | **Done** |
 | **1B — Water shops & POS** | Water shops (company-owned and dealer), stock requests, shop till (offline), head-office counter, daily till closing, settlements, shop statements | **Done** |
-| 2 — Operations & finance | Production, QC, procurement, accounting UI, HR, fleet | Next |
+| **2A — Production, QC & purchasing** | Materials & bills of materials, production batches, QC holds/tests/release, batch tracing & recalls, suppliers, purchase requests/orders, goods received, 3-way matched supplier invoices, supplier payments, weighted average cost | **Done** |
+| 2B — Finance | Accounting screens & reports, cheques, expenses, tax | Next |
+| 2C — People & assets | HR & payroll, fleet, fixed assets | |
 | 3 — Commercial & control | Distributors, CRM, complaints, notifications, documents, approvals | |
 | 4 — Intelligence | AI assistant, analytics, forecasting | |
+
+### What Phase 2A adds
+
+- **Materials** — caps, labels, preforms, chemicals, filters and spare parts are stock items (any unit: piece, kg, litre…), with reorder levels and a **bill of materials** per product.
+- **Production** — plan a batch on a line, record process stages (RO, UV, ozone, filling…), then finish it: materials used are taken from stock (suggested from the bill of materials), 19L bottles can be scanned so each bottle is traced to its batch, and the output goes on **QC hold** with an expiry date and a real cost per unit.
+- **Quality control** — test templates with limits (pH, TDS, turbidity, E. coli…); results outside the limits fail automatically; certificates/lab reports can be uploaded. Only a passed batch can be released; a failed batch goes to **quarantine** and can never be sold unless an authorised manager overrides with a reason (audited). Quarantined stock is destroyed and written off from the batch page.
+- **Batch tracing & recalls** — every stock movement records its batch (oldest stock leaves first). A recall pulls all remaining stock into quarantine and lists every customer who received the batch, for follow-up and recovery.
+- **Purchasing** — purchase request → approval → purchase order (orders over the purchase limit need approval; printable PO) → goods received (part deliveries, rejects at the door, supplier lot and expiry) → supplier invoice **3-way matched** against order and goods received (mismatches are held for an approver) → supplier payment.
+- **Suppliers** — details, price lists, what you owe, overdue, on-time delivery and rejection rates.
+- **Costing & accounting** — weighted average cost from purchases and production; journals for goods received (via Goods Received Not Invoiced), supplier invoices (incl. VAT input and price variance), payments, production and QC write-offs.
+- **Dashboard & inventory** — stock by status (available / QC hold / quarantine), stock value, low stock, expiring stock, purchases waiting, supplier payables.
 
 ### What Phase 1B adds
 
@@ -108,7 +121,7 @@ Import the repository in Vercel and add the same three environment variables. `S
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + database tests (Phase 0, 1A and 1B scenarios) on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B and 2A scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build

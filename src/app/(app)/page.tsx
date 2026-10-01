@@ -44,15 +44,23 @@ export default async function DashboardPage() {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("dashboard_summary");
+  const [{ data, error }, { data: opsData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary")]);
   if (error) return <Alert tone="error">{error.message}</Alert>;
   const d = data as Dash;
+  const ops = (opsData ?? {}) as { production?: Record<string, number> | null; stock?: Record<string, number> | null; purchasing?: Record<string, number> | null };
   const max = Math.max(1, ...d.sales_14d.map((x) => Number(x.sales)));
 
   const alerts: { tone: "error" | "warning"; text: string; href: string }[] = [];
   if (d.exceptions.critical > 0) alerts.push({ tone: "error", text: `${d.exceptions.critical} critical exception(s) — missing bottles, stock or cash`, href: "/exceptions" });
   if (d.orders_on_hold > 0) alerts.push({ tone: "warning", text: `${d.orders_on_hold} order(s) on hold for credit or bottle limits`, href: "/orders?status=on_hold" });
   if (d.shops_pending_requests > 0) alerts.push({ tone: "warning", text: `${d.shops_pending_requests} shop stock request(s) waiting for approval or dispatch`, href: "/shops/requests" });
+  if (ops.production?.qc_hold) alerts.push({ tone: "warning", text: `${ops.production.qc_hold} production batch(es) waiting for QC release`, href: "/quality" });
+  if (ops.production?.open_recalls) alerts.push({ tone: "error", text: `${ops.production.open_recalls} batch recall(s) open`, href: "/quality" });
+  if (ops.stock?.low_items) alerts.push({ tone: "warning", text: `${ops.stock.low_items} item(s) at or below the reorder level`, href: "/inventory" });
+  if (ops.stock?.expiring) alerts.push({ tone: "warning", text: `${ops.stock.expiring} batch stock line(s) expiring soon`, href: "/inventory" });
+  if (ops.purchasing?.orders_waiting || ops.purchasing?.requests_waiting)
+    alerts.push({ tone: "warning", text: `${Number(ops.purchasing.orders_waiting) + Number(ops.purchasing.requests_waiting)} purchase(s) waiting for approval`, href: "/purchasing" });
+  if (ops.purchasing?.invoices_on_hold) alerts.push({ tone: "error", text: `${ops.purchasing.invoices_on_hold} supplier invoice(s) on hold — they don't match the order`, href: "/purchasing" });
   if (d.deliveries.failed > 0) alerts.push({ tone: "warning", text: `${d.deliveries.failed} failed delivery(ies) today`, href: "/dispatch" });
   d.external_alerts.forEach((a) =>
     alerts.push({ tone: "warning", text: `${a.company}: ${a.held} bottles held (alert at ${a.limit}) — arrange a hand-over`, href: "/bottles/external" }),
@@ -88,6 +96,9 @@ export default async function DashboardPage() {
         <Stat label="Warehouse bottles" value={`${n(d.bottles.warehouse_full)} full`} hint={`${n(d.bottles.warehouse_empty)} empty · ${n(d.bottles.on_vehicles)} on vehicles · ${n(d.bottles.at_shops ?? 0)} at shops`} />
         <Stat label="OLA bottles with customers" value={n(d.bottles.with_customers)} hint="Loaned or under deposit" />
         <Stat label="External bottles held" value={n(d.bottles.external_held)} hint={`${n(d.bottles.external_on_vehicles)} more on vehicles and at shops`} />
+        {ops.production && <Stat label="Produced today" value={n(ops.production.today_produced)} hint={`${ops.production.qc_hold} batch(es) on QC hold · ${n(ops.production.quarantine_qty)} in quarantine`} />}
+        {ops.stock && <Stat label="Stock value" value={formatLKR(Number(ops.stock.finished_value) + Number(ops.stock.materials_value))} hint={`Products ${formatLKR(ops.stock.finished_value)} · materials ${formatLKR(ops.stock.materials_value)}`} />}
+        {ops.purchasing && <Stat label="Owed to suppliers" value={formatLKR(ops.purchasing.payable)} hint={`${formatLKR(ops.purchasing.payable_overdue)} overdue · ${formatLKR(ops.purchasing.due_7_days)} due in 7 days`} />}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
