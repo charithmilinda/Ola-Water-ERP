@@ -63,6 +63,11 @@ export default async function QualityPage() {
     );
   };
 
+  const { data: reviews } = await supabase.from("complaints")
+    .select("id, complaint_no, subject, created_at, batch:production_batches(batch_no), customer:customers(name)")
+    .eq("qc_review_status", "requested").order("created_at");
+  type Review = { id: string; complaint_no: string; subject: string; created_at: string; batch: { batch_no: string } | null; customer: { name: string } | null };
+
   return (
     <>
       <PageHeader title="Quality Control" description="New production waits here until it passes QC. Failed and recalled stock stays in quarantine until it is destroyed."
@@ -72,6 +77,19 @@ export default async function QualityPage() {
             {templateFields()}
           </FormDialog>
         )} />
+
+      {(reviews ?? []).length > 0 && (
+        <Card className="mb-6">
+          <CardHeader title="Customer complaints to review" description="Check retained samples, re-test, hold or recall the batch, then record your finding on the complaint." />
+          <Table>
+            <thead><tr><Th>Complaint</Th><Th>Batch</Th><Th>Customer</Th><Th>Logged</Th></tr></thead>
+            <tbody>{((reviews ?? []) as unknown as Review[]).map((r) => (
+              <tr key={r.id}><Td><Link href={`/complaints/${r.id}`} className="font-medium text-ola-700 hover:underline">{r.subject}</Link>
+                <span className="block font-mono text-xs text-muted">{r.complaint_no}</span></Td>
+                <Td className="font-mono">{r.batch?.batch_no ?? "—"}</Td><Td>{r.customer?.name ?? "—"}</Td><Td>{formatDateTime(r.created_at)}</Td></tr>))}</tbody>
+          </Table>
+        </Card>
+      )}
 
       {p && (
         <div className="mb-6 grid gap-4 sm:grid-cols-3">

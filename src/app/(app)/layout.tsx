@@ -4,12 +4,21 @@ import { OlaWordmark } from "@/components/layout/logo";
 import { SidebarNav, type ClientNavGroup } from "@/components/layout/sidebar-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserMenu } from "@/components/layout/user-menu";
+import { NotificationBell, type NotificationItem } from "@/components/layout/notification-bell";
+import { after } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { backgroundHousekeeping } from "@/lib/messaging/dispatch";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const access = await getAccess();
   const groups: ClientNavGroup[] = visibleNav(access.is_super_admin, access.permissions, access.scoped.map((x) => x.permission));
+  const supabase = await createClient();
+  const { data: notes } = await supabase.rpc("my_notifications", { p_limit: 15 });
+  const n = (notes ?? { unread: 0, items: [] }) as { unread: number; items: NotificationItem[] };
+  // alert scan and message queue run after the page is sent (throttled)
+  after(() => backgroundHousekeeping(supabase));
 
   return (
     <div className="flex min-h-dvh">
@@ -29,7 +38,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <OlaWordmark />
             </div>
           </div>
-          <UserMenu access={access} />
+          <div className="flex items-center gap-1">
+            <NotificationBell unread={n.unread} items={n.items} />
+            <UserMenu access={access} />
+          </div>
         </header>
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>

@@ -141,11 +141,11 @@ export function CustomerFields({
             ))}
           </Select>
         </Field>
-        <Field label="Credit limit (Rs.)" htmlFor="credit_limit" hint={canCredit ? "0 = no credit (pay on delivery)" : "Only Finance can change this"}>
-          <Input id="credit_limit" name="credit_limit" type="number" min={0} step="0.01" defaultValue={c?.credit_limit ?? 0} readOnly={!canCredit} />
+        <Field label="Credit limit (Rs.)" htmlFor="credit_limit" hint={canCredit ? "0 = no credit (pay on delivery)" : "A change goes to Finance for approval"}>
+          <Input id="credit_limit" name="credit_limit" type="number" min={0} step="0.01" defaultValue={c?.credit_limit ?? 0} />
         </Field>
         <Field label="Payment terms (days)" htmlFor="payment_terms_days" hint={c ? undefined : "Blank = default for the type"}>
-          <Input id="payment_terms_days" name="payment_terms_days" type="number" min={0} defaultValue={c?.payment_terms_days ?? ""} readOnly={!canCredit && !!c} />
+          <Input id="payment_terms_days" name="payment_terms_days" type="number" min={0} defaultValue={c?.payment_terms_days ?? ""} />
         </Field>
       </fieldset>
 

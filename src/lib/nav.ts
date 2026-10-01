@@ -22,6 +22,14 @@ export const NAV: NavGroup[] = [
     items: [{ href: "/", label: "Dashboard", icon: "LayoutDashboard", permissions: [] }],
   },
   {
+    label: "Control",
+    items: [
+      { href: "/approvals", label: "Approvals", icon: "ClipboardCheck", permissions: [] },
+      { href: "/complaints", label: "Complaints", icon: "MessageSquareWarning", permissions: ["complaints.view", "complaints.manage", "qc.manage"] },
+      { href: "/documents", label: "Documents", icon: "FileText", permissions: ["documents.view", "hr.view", "fleet.manage", "qc.view", "procurement.view", "payments.view"] },
+    ],
+  },
+  {
     label: "Sales",
     items: [
       { href: "/customers", label: "Customers", icon: "Contact", permissions: ["customers.view"] },
@@ -108,6 +116,7 @@ export const NAV: NavGroup[] = [
       { href: "/admin/users", label: "Users", icon: "Users", permissions: ["users.manage"] },
       { href: "/admin/roles", label: "Roles & Permissions", icon: "ShieldCheck", permissions: ["roles.manage"] },
       { href: "/admin/settings", label: "System Settings", icon: "Settings", permissions: ["settings.manage"] },
+      { href: "/messages", label: "Messages & Alerts", icon: "MessageCircle", permissions: ["settings.manage"] },
     ],
   },
 ];

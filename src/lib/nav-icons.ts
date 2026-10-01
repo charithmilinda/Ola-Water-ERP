@@ -1,4 +1,8 @@
 import {
+  ClipboardCheck,
+  MessageSquareWarning,
+  FileText,
+  MessageCircle,
   IdCard,
   CalendarCheck,
   HandCoins,
@@ -73,6 +77,10 @@ export const NAV_ICONS = {
   HandCoins,
   Car,
   Cog,
+  ClipboardCheck,
+  MessageSquareWarning,
+  FileText,
+  MessageCircle,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

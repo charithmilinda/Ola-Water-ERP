@@ -44,9 +44,11 @@ export default async function DashboardPage() {
   }
 
   const supabase = await createClient();
-  const [{ data, error }, { data: opsData }, { data: accData }, { data: paData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary"),
+  const [{ data, error }, { data: opsData }, { data: accData }, { data: paData }, { data: ctlData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary"),
     can(access, ["accounting.view", "payments.manage"]) ? supabase.rpc("accounting_overview") : Promise.resolve({ data: null }),
-    supabase.rpc("people_assets_summary")]);
+    supabase.rpc("people_assets_summary"), supabase.rpc("control_summary")]);
+  const ctl = (ctlData ?? {}) as { approvals_waiting?: number; complaints?: { open: number; overdue: number; unassigned: number; mine: number } | null;
+    qc_reviews?: number | null; documents_expiring?: number; documents_expired?: number; messages?: { queued: number; failed: number; enabled: boolean } | null };
   type PA = {
     hr: { headcount: number; pending_leave: number; attendance_today: number } | null;
     payroll: { last_month_status: string | null; drafts: number; unpaid: number } | null;
@@ -74,6 +76,13 @@ export default async function DashboardPage() {
   if (acc?.journals_waiting) alerts.push({ tone: "warning", text: `${acc.journals_waiting} manual journal(s) waiting for approval`, href: "/accounting/journals" });
   if (acc?.expenses_waiting) alerts.push({ tone: "warning", text: `${acc.expenses_waiting} expense(s) waiting for approval`, href: "/expenses" });
   if (acc?.cheques_in_hand?.count) alerts.push({ tone: "warning", text: `${acc.cheques_in_hand.count} cheque(s) in hand (${formatLKR(acc.cheques_in_hand.amount)}) — bank them`, href: "/accounting/banking" });
+  if (ctl.approvals_waiting) alerts.push({ tone: "warning", text: `${ctl.approvals_waiting} item(s) waiting for your approval`, href: "/approvals" });
+  if (ctl.complaints?.overdue) alerts.push({ tone: "error", text: `${ctl.complaints.overdue} complaint(s) past their due time`, href: "/complaints?show=overdue" });
+  if (ctl.complaints?.unassigned) alerts.push({ tone: "warning", text: `${ctl.complaints.unassigned} new complaint(s) not assigned`, href: "/complaints?show=new" });
+  if (ctl.qc_reviews) alerts.push({ tone: "warning", text: `${ctl.qc_reviews} quality complaint(s) waiting for QC review`, href: "/quality" });
+  if (ctl.documents_expired) alerts.push({ tone: "error", text: `${ctl.documents_expired} document(s) or vehicle papers expired`, href: "/documents?show=expiring" });
+  else if (ctl.documents_expiring) alerts.push({ tone: "warning", text: `${ctl.documents_expiring} document(s) expiring within 30 days`, href: "/documents?show=expiring" });
+  if (ctl.messages?.failed) alerts.push({ tone: "warning", text: `${ctl.messages.failed} customer message(s) could not be sent this week`, href: "/messages?show=failed" });
   if (pa.hr?.pending_leave) alerts.push({ tone: "warning", text: `${pa.hr.pending_leave} leave request(s) waiting for approval`, href: "/hr/attendance" });
   if (pa.payroll?.drafts) alerts.push({ tone: "warning", text: `${pa.payroll.drafts} payroll run(s) waiting for approval`, href: "/payroll" });
   if (pa.payroll?.unpaid) alerts.push({ tone: "warning", text: `${pa.payroll.unpaid} approved payroll(s) not yet paid`, href: "/payroll" });
@@ -119,6 +128,7 @@ export default async function DashboardPage() {
         {ops.production && <Stat label="Produced today" value={n(ops.production.today_produced)} hint={`${ops.production.qc_hold} batch(es) on QC hold · ${n(ops.production.quarantine_qty)} in quarantine`} />}
         {ops.stock && <Stat label="Stock value" value={formatLKR(Number(ops.stock.finished_value) + Number(ops.stock.materials_value))} hint={`Products ${formatLKR(ops.stock.finished_value)} · materials ${formatLKR(ops.stock.materials_value)}`} />}
         {ops.purchasing && <Stat label="Owed to suppliers" value={formatLKR(ops.purchasing.payable)} hint={`${formatLKR(ops.purchasing.payable_overdue)} overdue · ${formatLKR(ops.purchasing.due_7_days)} due in 7 days`} />}
+        {ctl.complaints && <Stat label="Open complaints" value={n(ctl.complaints.open)} hint={`${ctl.complaints.overdue} overdue · ${ctl.complaints.mine} assigned to you`} />}
         {pa.hr && <Stat label="Employees" value={n(pa.hr.headcount)} hint={`${n(pa.hr.attendance_today)} attendance marked today`} />}
         {pa.fleet && <Stat label="Fuel this month" value={formatLKR(pa.fleet.fuel_month)} hint={`${pa.fleet.alerts} vehicle alert(s)`} />}
         {pa.assets && <Stat label="Fixed assets" value={formatLKR(pa.assets.book_value)} hint={`${pa.assets.count} asset(s) at book value${pa.assets.last_depreciation ? ` · depreciated to ${pa.assets.last_depreciation}` : ""}`} />}

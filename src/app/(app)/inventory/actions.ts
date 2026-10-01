@@ -1,6 +1,6 @@
 "use server";
 
-import { runRpc, payload } from "@/lib/rpc";
+import { runRpc, runRpcOrApproval, payload } from "@/lib/rpc";
 import { str, type ActionResult } from "@/lib/actions";
 
 const P = ["/inventory", "/", "/materials"];
@@ -19,8 +19,9 @@ export async function transferStock(_p: ActionResult, f: FormData): Promise<Acti
 }
 
 export async function adjustStock(_p: ActionResult, f: FormData): Promise<ActionResult> {
-  return runRpc<{ previous: number; counted: number; difference: number }>("adjust_stock", {
+  return runRpcOrApproval<{ previous: number; counted: number; difference: number }>("adjust_stock", {
     p_location: str(f, "location"), p_product: str(f, "product_id"), p_counted: Number(str(f, "counted")), p_reason: str(f, "reason"),
     p_client_txn_id: str(f, "client_txn_id"),
-  }, (d) => (Number(d.difference) === 0 ? "Count matches — nothing changed." : `Adjusted by ${Number(d.difference) > 0 ? "+" : ""}${Number(d.difference)}.`), P);
+  }, (d) => (Number(d.difference) === 0 ? "Count matches — nothing changed." : `Adjusted by ${Number(d.difference) > 0 ? "+" : ""}${Number(d.difference)}.`), P,
+  str(f, "reason"));
 }

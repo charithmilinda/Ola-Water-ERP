@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DocumentsCard } from "@/components/documents/documents-card";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -144,6 +145,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
           )}
         </Card>
       </div>
+      <div className="mt-6"><DocumentsCard access={access} entityType="vehicle" entityId={id} categories={["vehicle","insurance","other"]} returnTo={`/fleet/${id}`} /></div>
     </>
   );
 }

@@ -18,6 +18,11 @@ import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { Field, Input, Select } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomerFields, type CustomerRow } from "../customer-fields";
+import { Alert } from "@/components/ui/alert";
+import { DocumentsCard } from "@/components/documents/documents-card";
+import { COMPLAINT_STATUS } from "@/lib/labels";
+import { ComplaintFields, loadComplaintFormData } from "../../complaints/complaint-fields";
+import { logComplaint } from "../../complaints/actions";
 import { updateCustomer, saveAddress, recordPayment, setOpeningBottles, issueCreditNote, reversePayment, applyCredit } from "../actions";
 
 export const metadata: Metadata = { title: "Customer" };
@@ -52,6 +57,13 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         : Promise.resolve({ data: null }),
       supabase.from("credit_notes").select("id, credit_note_no, credit_date, reason, total, unallocated, invoice:invoices(invoice_no)").eq("customer_id", id).order("created_at", { ascending: false }).limit(10),
     ]);
+  const [{ data: creditReq }, { data: complaints }, complaintForm] = await Promise.all([
+    supabase.from("approval_requests").select("request_no, details").eq("entity_id", id).eq("kind", "credit_change").eq("status", "pending").limit(1),
+    can(access, ["complaints.view", "complaints.manage"])
+      ? supabase.from("complaints").select("id, complaint_no, subject, status, created_at").eq("customer_id", id).order("created_at", { ascending: false }).limit(8)
+      : Promise.resolve({ data: null }),
+    can(access, ["complaints.view", "complaints.manage"]) ? loadComplaintFormData(supabase) : Promise.resolve(null),
+  ]);
   const canCredit = can(access, "payments.manage") && can(access, ["customers.credit", "accounting.manual_journal"]);
   const canReverse = can(access, "payments.manage") && can(access, "accounting.reverse");
   const unusedCredit = (credits ?? []).reduce((a, x) => a + Number(x.unallocated), 0);
@@ -101,6 +113,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 <Field label="Notes" htmlFor="pay-notes"><Input id="pay-notes" name="notes" /></Field>
               </FormDialog>
             )}
+            {complaintForm && (
+              <FormDialog trigger="Log complaint" triggerSize="md" title={`Complaint — ${c.name}`} submitLabel="Save complaint" action={logComplaint} wide>
+                <ComplaintFields data={complaintForm} customer={{ id: c.id, name: c.name }} />
+              </FormDialog>
+            )}
             {canCredit && (
               <FormDialog trigger="Credit note" triggerSize="md" title="Issue a credit note" description="Reduces what the customer owes (price correction, leaking bottles, recalled stock). Posted to Sales Returns and output VAT."
                 submitLabel="Issue credit note" action={issueCreditNote} hidden={{ customer_id: c.id }}>
@@ -119,6 +136,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         }
       />
 
+      {creditReq?.[0] && (
+        <Alert tone="warning" className="mb-4">Credit terms waiting for approval ({creditReq[0].request_no}): {creditReq[0].details}. Until approved the customer stays on the current terms.</Alert>
+      )}
       {s && (
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat label="Balance" value={formatLKR(s.outstanding)} hint={Number(s.overdue) > 0 ? `${formatLKR(s.overdue)} overdue` : "Nothing overdue"} />
@@ -269,6 +289,20 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               </Table>
             </Card>
           )}
+
+          {complaints && (
+            <Card>
+              <CardHeader title="Complaints" actions={<Link href="/complaints?show=all" className="text-sm font-medium text-ola-700 hover:underline">All complaints</Link>} />
+              {complaints.length === 0 ? <CardBody><p className="text-sm text-muted">No complaints.</p></CardBody> : (
+                <Table><tbody>{complaints.map((x) => { const st = statusBadge(COMPLAINT_STATUS, x.status); return (
+                  <tr key={x.id}><Td><Link href={`/complaints/${x.id}`} className="font-medium text-ola-700 hover:underline">{x.subject}</Link>
+                    <span className="block text-xs text-muted">{x.complaint_no} · {formatDate(x.created_at)}</span></Td>
+                    <Td className="text-right"><Badge tone={st.tone}>{st.label}</Badge></Td></tr>); })}</tbody></Table>
+              )}
+            </Card>
+          )}
+
+          <DocumentsCard access={access} entityType="customer" entityId={c.id} categories={["contract", "finance", "other"]} returnTo={`/customers/${c.id}`} />
 
           {can(access, "customers.manage") && (
             <Card>

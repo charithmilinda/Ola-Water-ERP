@@ -2,6 +2,30 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 3A — Approvals, notifications, complaints, documents (October 2026)
+
+**D-3A-01 · Phase 3 split.** 3A (control: approvals inbox and rules, notifications and customer messages, complaints, documents), 3B (distributors, sales representatives, CRM), 3C (advanced reports).
+
+**D-3A-02 · Approvals instead of refusals.** Large stock adjustments, discounts above the limit, credit limit / payment-term changes (including new credit customers), price list changes and bottle write-offs used to be refused for people without the right permission. Now the action is test-run (to catch ordinary mistakes immediately), stored as an approval request and carried out **for the person who asked** when the last approver approves; the audit trail shows the requester as the actor and "approved by … (APR-…)" as the reason. Nobody approves their own request. Each rule's approver permission, number of approvers (1–3, different people) and on/off switch is set in Approvals → Rules; limits are the existing approval settings. With two or three levels even approvers must ask.
+
+**D-3A-03 · What an approval carries out.** A stock count is applied as counted at approval time (if stock moved in between, the difference is recalculated). An order with a large discount is created only when approved. Credit terms change only the two credit fields (never other details edited since); a new credit customer is created at once on cash terms. A price change takes effect on its date, or on the approval date if that has passed.
+
+**D-3A-04 · Module approvals stay in their modules** (expenses, purchases, mismatched supplier invoices, manual journals, payroll, leave, orders on credit hold, shop stock requests, QC release) but all appear in the one approvals inbox, and the rules page shows who can approve each.
+
+**D-3A-05 · Notifications** are in-app (the bell) for staff, routed by permission and configurable in Messages & Alerts (also optionally emailed). Event alerts (approval needed/decided, complaint assigned, quality complaint) are immediate; the others come from a scan that runs at most every 10 minutes while staff use the system, and every morning from Vercel Cron: low stock, overdue balances, failed deliveries, vehicle service and documents, document expiry, external bottles above the alert level, overdue complaints, batches on QC hold, items waiting for approval (one reminder a day each), failed messages. "Unsynced offline data" is still shown on the Dispatch and Exceptions screens rather than as an alert (the server cannot see what is stuck on a phone).
+
+**D-3A-06 · Customer messages** (English) go by SMS by default — order confirmed, delivered (with balance), delivery missed, payment received (not for payments taken at a delivery, already in the delivered message), payment reminder (when the oldest unpaid invoice is 7 days overdue, repeated every 7 days), complaint received / resolved. Nothing is sent until "Customer messages" is switched on and a provider is configured. Customers can be opted out. Every message is logged (queued → sent / failed, retried up to 3 times). WhatsApp business-initiated messages need templates approved by Meta; set the template name on each message.
+
+**D-3A-07 · Provider keys live only in Vercel environment variables**, never in the database: SMS via Notify.lk, Text.lk or any HTTP webhook; WhatsApp Cloud API; email via Resend. Messages are sent from the app server (after page loads, at most every 2 minutes, and daily by Vercel Cron at 08:30 Sri Lanka time — the free Vercel plan allows one cron a day).
+
+**D-3A-08 · Complaints** follow New → Assigned → In progress → Resolved → Closed (reopen allowed). Due time = logged time + hours by priority (urgent 4, high 24, normal 48, low 72 — settings). Product and quality complaints that name a batch require a QC finding before they can be resolved; QC uses its normal tools (re-test, hold, recall). The timeline is append-only. Photos are stored privately.
+
+**D-3A-09 · Documents** are stored in a private bucket by type; who can see/upload each type follows a permission (employee papers → HR, vehicle → fleet, lab reports → QC, contracts/licences/insurance → documents). Licences and insurance require an expiry date. A renewed document is uploaded as a new version; old versions and archived documents are kept. Vehicle insurance/licence/emission dates from Fleet are included in the expiry list.
+
+### Not verified in this phase
+- All approval, notification, messaging, complaint and document flows were tested against PostgreSQL 16 (including two-level approvals, rejection, test-run validation, opt-out, retry, QC review and document permissions). The SMS / WhatsApp / email calls were not sent to real providers — send a test message to your own phone after setting up the provider.
+- Screens were type-checked and production-built but not clicked through against the live project.
+
 ## Phase 2C — People, fleet & assets (October 2026)
 
 **D-2C-01 · Statutory rates are effective-dated data, not code.** EPF (employee 8%, employer 12%), ETF (3%) and the monthly APIT table are stored with a start date and can be changed in Payroll → Statutory settings without a software update. The seeded APIT table (from 1 April 2025: first Rs. 150,000 a month tax-free, then 6/18/24/30/36%) is a starting point — **your accountant must confirm it, and the EPF/ETF rates, before the first real payroll**. APIT is calculated on gross pay less non-taxable allowances; EPF/ETF on basic salary less no-pay plus allowances marked "EPF liable".

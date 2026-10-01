@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DocumentsCard } from "@/components/documents/documents-card";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -236,6 +237,23 @@ export default async function BatchPage({ params }: { params: Promise<{ id: stri
           </Card>
         )}
       </div>
+      <div className="mt-6"><DocumentsCard access={access} entityType="batch" entityId={id} categories={["lab_report","qc_certificate"]} returnTo={`/production/${id}`} /></div>
+      <BatchComplaints batchId={id} />
     </>
+  );
+}
+
+async function BatchComplaints({ batchId }: { batchId: string }) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("complaints").select("id, complaint_no, subject, status, created_at, qc_review_status").eq("batch_id", batchId)
+    .order("created_at", { ascending: false });
+  if (!data?.length) return null;
+  return (
+    <div className="mt-6 rounded-xl border border-line bg-white p-5 shadow-xs">
+      <h2 className="mb-2 text-base font-semibold text-navy-900">Customer complaints about this batch</h2>
+      <ul className="space-y-1 text-sm">{data.map((c) => (
+        <li key={c.id}><Link href={`/complaints/${c.id}`} className="text-ola-700 hover:underline">{c.complaint_no}</Link> — {c.subject}
+          <span className="text-muted"> ({c.status.replace("_", " ")}{c.qc_review_status === "requested" ? ", QC review needed" : ""})</span></li>))}</ul>
+    </div>
   );
 }

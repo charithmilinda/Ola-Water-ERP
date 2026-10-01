@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DocumentsCard } from "@/components/documents/documents-card";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calculator, FileText, PackagePlus } from "lucide-react";
@@ -262,6 +263,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
       </div>
       {!dealer && Number(d.month.credit) > 0 && <Alert tone="info" className="mt-6">{formatLKR(d.month.credit)} sold on account this month — collected through the customers&apos; accounts.</Alert>}
       <p className="mt-6 text-xs text-muted">Prices at the till: {s.retail_price_list}{dealer && s.transfer_price_list ? ` · Dealer pays: ${s.transfer_price_list}` : ""}. {humanize(s.status)}.</p>
+      <div className="mt-6"><DocumentsCard access={access} entityType="shop" entityId={id} categories={["contract","licence","other"]} returnTo={`/shops/${id}`} /></div>
     </>
   );
 }

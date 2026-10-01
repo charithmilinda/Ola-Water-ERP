@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DocumentsCard } from "@/components/documents/documents-card";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -137,6 +138,7 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
           </Card>
         )}
       </div>
+      <div className="mt-6"><DocumentsCard access={access} entityType="asset" entityId={id} categories={["contract","insurance","other"]} returnTo={`/assets/${id}`} /></div>
     </>
   );
 }

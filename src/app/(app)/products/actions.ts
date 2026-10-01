@@ -1,6 +1,6 @@
 "use server";
 
-import { runRpc, payload } from "@/lib/rpc";
+import { runRpc, runRpcOrApproval, payload } from "@/lib/rpc";
 import { str, type ActionResult } from "@/lib/actions";
 
 const P = ["/products"];
@@ -34,12 +34,12 @@ export async function saveProduct(_p: ActionResult, f: FormData): Promise<Action
 export async function setPrices(_p: ActionResult, f: FormData): Promise<ActionResult> {
   const d = payload<{ price_list_id: string; prices: { product_id: string; unit_price: string }[]; effective_from: string; reason: string }>(f);
   if (!d.reason?.trim()) return { ok: false, message: "A reason is required to change prices." };
-  return runRpc<number>("set_prices", {
+  return runRpcOrApproval<number>("set_prices", {
     p_price_list: d.price_list_id,
     p_prices: d.prices.filter((x) => x.unit_price !== ""),
     p_effective_from: d.effective_from,
     p_reason: d.reason,
-  }, (n) => (n === 0 ? "No prices changed." : `${n} price(s) saved.`), P);
+  }, (n) => (n === 0 ? "No prices changed." : `${n} price(s) saved.`), P, d.reason);
 }
 
 export async function setTaxRate(_p: ActionResult, f: FormData): Promise<ActionResult> {

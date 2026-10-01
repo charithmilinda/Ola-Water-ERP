@@ -189,3 +189,40 @@ export const MONTHS = ["January", "February", "March", "April", "May", "June", "
 export function statusBadge(map: Record<string, { label: string; tone: BadgeTone }>, s: string) {
   return map[s] ?? { label: s.replace(/_/g, " "), tone: "neutral" as BadgeTone };
 }
+
+export const APPROVAL_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  pending: { label: "Waiting", tone: "amber" },
+  executing: { label: "Being carried out", tone: "blue" },
+  approved: { label: "Approved", tone: "green" },
+  rejected: { label: "Rejected", tone: "red" },
+  cancelled: { label: "Withdrawn", tone: "neutral" },
+};
+
+export const COMPLAINT_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  new: { label: "New", tone: "red" },
+  assigned: { label: "Assigned", tone: "amber" },
+  in_progress: { label: "In progress", tone: "blue" },
+  resolved: { label: "Resolved", tone: "green" },
+  closed: { label: "Closed", tone: "neutral" },
+};
+
+export const PRIORITY: Record<string, { label: string; tone: BadgeTone }> = {
+  urgent: { label: "Urgent", tone: "red" },
+  high: { label: "High", tone: "amber" },
+  normal: { label: "Normal", tone: "blue" },
+  low: { label: "Low", tone: "neutral" },
+};
+
+export const COMPLAINT_CHANNELS = [["phone", "Phone call"], ["whatsapp", "WhatsApp"], ["email", "Email"], ["walk_in", "Walk-in"],
+  ["driver", "Told the driver"], ["shop", "At a water shop"], ["sales_rep", "Sales rep"], ["other", "Other"]] as const;
+
+export const MESSAGE_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  queued: { label: "Queued", tone: "amber" },
+  sending: { label: "Sending", tone: "blue" },
+  sent: { label: "Sent", tone: "green" },
+  failed: { label: "Failed", tone: "red" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+};
+
+export const DOC_ENTITY_TYPES = [["company", "Company"], ["customer", "Customer"], ["supplier", "Supplier"], ["employee", "Employee"],
+  ["vehicle", "Vehicle"], ["asset", "Fixed asset"], ["batch", "Production batch"], ["shop", "Water shop"]] as const;

@@ -1,6 +1,6 @@
 "use server";
 
-import { runRpc, payload } from "@/lib/rpc";
+import { runRpc, runRpcOrApproval, payload } from "@/lib/rpc";
 import { str, type ActionResult } from "@/lib/actions";
 
 const P = ["/bottles", "/bottles/external", "/"];
@@ -22,7 +22,7 @@ export async function openingBottlesAtLocation(_p: ActionResult, f: FormData): P
 }
 
 export async function markBottle(_p: ActionResult, f: FormData): Promise<ActionResult> {
-  return runRpc("mark_bottle", { p_code: str(f, "code"), p_action: str(f, "action"), p_reason: str(f, "reason") }, "Bottle updated.", P);
+  return runRpcOrApproval("mark_bottle", { p_code: str(f, "code"), p_action: str(f, "action"), p_reason: str(f, "reason") }, "Bottle updated.", P, str(f, "reason"));
 }
 
 export async function recordHandover(_p: ActionResult, f: FormData): Promise<ActionResult> {

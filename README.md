@@ -18,8 +18,18 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 | **2A — Production, QC & purchasing** | Materials & bills of materials, production batches, QC holds/tests/release, batch tracing & recalls, suppliers, purchase requests/orders, goods received, 3-way matched supplier invoices, supplier payments, weighted average cost | **Done** |
 | **2B — Finance** | Accounting reports (P&L, balance sheet, cash flow, trial balance, ledger, ageing, VAT), manual journals with approval, periods, cash & bank accounts, cheques, payment reversals, credit notes, transfers, card settlements, bank reconciliation, expenses, VAT returns | **Done** |
 | **2C — People & assets** | HR (employees, attendance, leave, advances), payroll with EPF/ETF/APIT and payslips, fleet (documents, fuel logs, services, driver road expenses, vehicle profitability), fixed assets & depreciation | **Done** |
-| 3 — Commercial & control | Distributors, CRM, complaints, notifications, documents, approvals | Next |
+| **3A — Control** | Approvals inbox and configurable rules (stock, discounts, credit, prices, bottle write-offs, plus all module approvals), notification bell, customer SMS / WhatsApp and staff email with outbox, complaints with SLA and QC review, document library with expiry alerts | **Done** |
+| 3B — Commercial | Distributors / dealers, sales representatives (visits, targets, commission), CRM (leads, campaigns, promotions) | Next |
+| 3C — Reports | Advanced reports and exports across all modules | |
 | 4 — Intelligence | AI assistant, analytics, forecasting | |
+
+### What Phase 3A adds
+
+- **Approvals** — one inbox for everything waiting for you (from every module), "My requests", history, and rules: approver permission, 1–3 approvers, on/off. Large stock counts, big discounts, credit limits, price changes and bottle write-offs are sent for approval instead of being refused, and carried out automatically when approved.
+- **Notifications** — a bell with alerts for approvals, complaints, low stock, overdue balances, failed deliveries, vehicles, expiring documents, external bottles, QC holds and failed messages.
+- **Customer messages** — SMS (or WhatsApp) for order confirmation, delivery, missed delivery, payment received, payment reminders and complaint updates, with editable English templates, opt-out, outbox and retries. Optional staff email.
+- **Complaints** — log by phone/WhatsApp/shop/driver, link to order, batch, bottle, product or shop, photos, assign, due time by priority, timeline, QC review for quality complaints, resolve / close / reopen; shown on the customer and the batch.
+- **Documents** — private library (contracts, licences, insurance, employee, vehicle, lab reports, QC certificates, purchase and finance documents) with versions, expiry alerts, and a Documents card on customers, suppliers, employees, vehicles, assets, batches and shops.
 
 ### What Phase 2C adds
 
@@ -138,12 +148,24 @@ npm run dev                  # http://localhost:3000
 
 Import the repository in Vercel and add the same three environment variables. `SUPABASE_SERVICE_ROLE_KEY` must **not** be prefixed with `NEXT_PUBLIC_`.
 
+Optional, for messages (Phase 3A) — add only the ones you use:
+
+| Variable | Purpose |
+|---|---|
+| `CRON_SECRET` | Any long random text; lets Vercel Cron run the daily alert scan and message sending (`vercel.json`) |
+| `SMS_PROVIDER` | `notify_lk`, `text_lk` or `webhook` |
+| `NOTIFYLK_USER_ID`, `NOTIFYLK_API_KEY`, `NOTIFYLK_SENDER_ID` | Notify.lk account |
+| `TEXTLK_API_TOKEN`, `TEXTLK_SENDER_ID` | Text.lk account |
+| `SMS_WEBHOOK_URL`, `SMS_WEBHOOK_TOKEN` | Any other SMS gateway (POST JSON `{to, message}`) |
+| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_LANGUAGE` | WhatsApp Cloud API |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Staff alert emails via Resend |
+
 ---
 
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B, 2A, 2B and 2C scenarios) on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B, 2A, 2B, 2C and 3A scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build

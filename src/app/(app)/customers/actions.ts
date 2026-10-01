@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { runRpc } from "@/lib/rpc";
 import { str, type ActionResult } from "@/lib/actions";
 
@@ -35,6 +36,14 @@ function customerPayload(f: FormData) {
   };
 }
 
+/** A credit limit / payment terms change that went to an approver while saving. */
+async function creditRequestNote(customerId: string): Promise<string> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("approval_requests").select("request_no").eq("entity_id", customerId).eq("kind", "credit_change")
+    .eq("status", "pending").gte("requested_at", new Date(Date.now() - 60_000).toISOString()).order("requested_at", { ascending: false }).limit(1);
+  return data?.[0] ? ` The credit terms were sent for approval (${data[0].request_no}) — until then the customer stays on the old terms.` : "";
+}
+
 export async function createCustomer(_p: ActionResult, f: FormData): Promise<ActionResult> {
   const res = await runRpc<string>("save_customer", { p_id: null, p: customerPayload(f), p_reason: "New customer" }, "Customer created.", ["/customers"]);
   if (!res.ok) return res;
@@ -43,7 +52,9 @@ export async function createCustomer(_p: ActionResult, f: FormData): Promise<Act
 
 export async function updateCustomer(_p: ActionResult, f: FormData): Promise<ActionResult> {
   const id = str(f, "id");
-  return runRpc("save_customer", { p_id: id, p: customerPayload(f), p_reason: str(f, "reason") || null }, "Customer saved.", [`/customers/${id}`]);
+  const res = await runRpc("save_customer", { p_id: id, p: customerPayload(f), p_reason: str(f, "reason") || null }, "Customer saved.", [`/customers/${id}`]);
+  if (!res.ok) return res;
+  return { ...res, message: res.message + (await creditRequestNote(id)) };
 }
 
 export async function saveAddress(_p: ActionResult, f: FormData): Promise<ActionResult> {

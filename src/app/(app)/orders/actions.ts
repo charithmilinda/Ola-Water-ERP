@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { runRpc, payload } from "@/lib/rpc";
+import { runRpc, runRpcOrApproval, isApproval, payload } from "@/lib/rpc";
 import { str, type ActionResult } from "@/lib/actions";
 import { todayISO } from "@/lib/format";
 
@@ -53,7 +53,7 @@ type OrderPayload = {
 
 export async function saveOrder(_p: ActionResult, f: FormData): Promise<ActionResult> {
   const d = payload<OrderPayload>(f);
-  const res = await runRpc<{ order_id: string; order_no: string; status: string; hold_reason: string | null }>("save_order", {
+  const res = await runRpcOrApproval<{ order_id: string; order_no: string; status: string; hold_reason: string | null }>("save_order", {
     p_id: d.id || null,
     p: {
       customer_id: d.customer_id, address_id: d.address_id, requested_date: d.requested_date, time_window: d.time_window,
@@ -62,8 +62,8 @@ export async function saveOrder(_p: ActionResult, f: FormData): Promise<ActionRe
     },
     p_confirm: d.confirm,
     p_client_txn_id: d.id ? null : str(f, "client_txn_id"),
-  }, "Order saved.", ["/orders"]);
-  if (!res.ok) return res;
+  }, "Order saved.", ["/orders"], d.notes || "Discount above the limit");
+  if (!res.ok || isApproval(res.data)) return res;
   redirect(`/orders/${res.data!.order_id}`);
 }
 
