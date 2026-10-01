@@ -1,4 +1,8 @@
 import {
+  Banknote,
+  BookOpen,
+  Landmark,
+  Receipt,
   Building2,
   Factory,
   FlaskConical,
@@ -55,6 +59,10 @@ export const NAV_ICONS = {
   Layers,
   ShoppingCart,
   Building2,
+  Landmark,
+  Banknote,
+  BookOpen,
+  Receipt,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

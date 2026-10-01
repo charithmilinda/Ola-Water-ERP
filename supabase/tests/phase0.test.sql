@@ -186,8 +186,8 @@ select tests.throws($$
     set constraints all immediate;
   end $x$ $$, 'not balanced', 'database rejects an unbalanced journal even without the posting function');
 
--- The accountant posts and reverses a manual journal
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000c', false);
+-- A finance manager posts a manual journal directly (from Phase 2B others submit it for approval)
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
 set role authenticated;
 select public.post_manual_journal(date '2026-10-01', 'Opening cash',
   '[{"account_key":"cash","debit":50000},{"account_key":"opening_equity","credit":50000}]',
@@ -199,6 +199,10 @@ select tests.throws($$select public.post_manual_journal(date '2026-10-01', 'x',
 select tests.throws($$select public.post_manual_journal(date '2026-10-01', 'x',
   ('[{"account_key":"cash","debit":10},{"account_id":"' || (select id from public.accounts where code = '1000') || '","credit":10}]')::jsonb, 'r', gen_random_uuid())$$,
   'cannot be posted to', 'header accounts cannot be posted to');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000c', false);
+select tests.throws($$select public.post_manual_journal(date '2026-10-01', 'x',
+  '[{"account_key":"cash","debit":10},{"account_key":"sales","credit":10}]', 'r', gen_random_uuid())$$,
+  'permission denied', 'an accountant cannot post a manual journal without approval');
 select tests.throws($$select public.reverse_journal_entry((select id from public.journal_entries where description = 'Opening cash'), 'Typo', date '2026-10-02', gen_random_uuid())$$,
   'permission denied', 'accountant role cannot reverse without accounting.reverse');
 reset role;

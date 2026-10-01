@@ -71,6 +71,15 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Finance",
+    items: [
+      { href: "/accounting", label: "Accounting & Reports", icon: "Landmark", permissions: ["accounting.view", "payments.manage"] },
+      { href: "/accounting/banking", label: "Banking & Cheques", icon: "Banknote", permissions: ["payments.manage", "accounting.view"] },
+      { href: "/accounting/journals", label: "Journals", icon: "BookOpen", permissions: ["accounting.view", "accounting.manual_journal"] },
+      { href: "/expenses", label: "Expenses", icon: "Receipt", permissions: ["expenses.view", "expenses.manage"] },
+    ],
+  },
+  {
     label: "Operations",
     items: [
       { href: "/inventory", label: "Inventory", icon: "Boxes", permissions: ["inventory.view"] },

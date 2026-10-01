@@ -75,3 +75,25 @@ export async function setOpeningBottles(_p: ActionResult, f: FormData): Promise<
     p_fill: "full", p_qty: Number(str(f, "qty")), p_reason: str(f, "reason"), p_client_txn_id: str(f, "client_txn_id"),
   }, "Opening bottles recorded.", [`/customers/${cid}`]);
 }
+
+export async function issueCreditNote(_p: ActionResult, f: FormData): Promise<ActionResult> {
+  const cid = str(f, "customer_id");
+  return runRpc<{ credit_note_no: string; total: number; unused_credit: number }>("issue_credit_note", {
+    p: { customer_id: cid, invoice_id: str(f, "invoice_id") || null, net: Number(str(f, "net") || 0), tax_rate: Number(str(f, "tax_rate") || 0),
+      reason: str(f, "reason") },
+    p_client_txn_id: str(f, "client_txn_id"),
+  }, (d) => `Credit note ${d.credit_note_no} issued.${Number(d.unused_credit) > 0 ? ` Rs. ${Number(d.unused_credit).toFixed(2)} is kept as credit.` : ""}`,
+  [`/customers/${cid}`, "/accounting"]);
+}
+
+export async function reversePayment(_p: ActionResult, f: FormData): Promise<ActionResult> {
+  const cid = str(f, "customer_id");
+  return runRpc<{ payment_no: string }>("reverse_payment", { p_payment: str(f, "payment_id"), p_reason: str(f, "reason"), p_client_txn_id: str(f, "client_txn_id") },
+    (d) => `Payment ${d.payment_no} reversed.`, [`/customers/${cid}`, "/payments", "/accounting"]);
+}
+
+export async function applyCredit(_p: ActionResult, f: FormData): Promise<ActionResult> {
+  const cid = str(f, "customer_id");
+  return runRpc<number>("apply_customer_credit", { p_customer: cid }, (n) => (Number(n) > 0 ? `Rs. ${Number(n).toFixed(2)} applied.` : "No unpaid invoice to apply it to."),
+    [`/customers/${cid}`]);
+}

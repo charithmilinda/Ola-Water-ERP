@@ -16,10 +16,21 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 | **1A — Core bottle & delivery loop** | Customers, products & prices, VAT, inventory, bottles, external bottles, deposits, orders, recurring orders, dispatch, driver app (offline), check-in reconciliation, receipts, dashboard | **Done** |
 | **1B — Water shops & POS** | Water shops (company-owned and dealer), stock requests, shop till (offline), head-office counter, daily till closing, settlements, shop statements | **Done** |
 | **2A — Production, QC & purchasing** | Materials & bills of materials, production batches, QC holds/tests/release, batch tracing & recalls, suppliers, purchase requests/orders, goods received, 3-way matched supplier invoices, supplier payments, weighted average cost | **Done** |
-| 2B — Finance | Accounting screens & reports, cheques, expenses, tax | Next |
-| 2C — People & assets | HR & payroll, fleet, fixed assets | |
+| **2B — Finance** | Accounting reports (P&L, balance sheet, cash flow, trial balance, ledger, ageing, VAT), manual journals with approval, periods, cash & bank accounts, cheques, payment reversals, credit notes, transfers, card settlements, bank reconciliation, expenses, VAT returns | **Done** |
+| 2C — People & assets | HR & payroll, fleet (incl. fuel logs and driver expenses), fixed assets & depreciation | Next |
 | 3 — Commercial & control | Distributors, CRM, complaints, notifications, documents, approvals | |
 | 4 — Intelligence | AI assistant, analytics, forecasting | |
+
+### What Phase 2B adds
+
+- **Reports** (print / PDF and Excel download) — Profit & Loss with the previous period, Balance Sheet, Cash Flow (by purpose), Trial Balance with opening and closing, General Ledger for any account, customer and supplier ageing (not due / 1–30 / 31–60 / 61–90 / 90+), VAT for a period.
+- **Journals** — every entry with its lines and source; reversal with a reason; **manual journals are prepared by one person and approved by another**.
+- **Accounting periods** — close a month (nothing can be posted into it afterwards); open new years; chart of accounts can be extended.
+- **Banking** — several cash, petty cash and bank accounts (each with its own ledger account); transfers (cash banked, petty cash top-ups), card/QR settlements with commission, bank charges and interest; **bank reconciliation** by ticking items against the statement.
+- **Cheques** — cheques received are tracked in hand → deposited (on a deposit slip) → cleared, or **returned** (the customer owes it again and the invoices reopen).
+- **Payments & credits** — reverse a payment entered by mistake; **credit notes** for price corrections, leaking bottles or recalled stock (with VAT), unused credit applied to later invoices.
+- **Expenses** — categories mapped to expense accounts, receipt photo/PDF, approval above the limit (never by the person who entered it), paid on the spot or recorded as a bill and paid later.
+- **VAT returns** — the period's output VAT is cleared against input VAT and the payment to the IRD recorded; excess input VAT is carried forward.
 
 ### What Phase 2A adds
 
@@ -121,7 +132,7 @@ Import the repository in Vercel and add the same three environment variables. `S
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B and 2A scenarios) on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B, 2A and 2B scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build

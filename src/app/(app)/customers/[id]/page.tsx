@@ -14,10 +14,11 @@ import { Table, Td } from "@/components/ui/table";
 import { ActionForm } from "@/components/ui/action-form";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { FormDialog } from "@/components/ui/form-dialog";
+import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { Field, Input, Select } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomerFields, type CustomerRow } from "../customer-fields";
-import { updateCustomer, saveAddress, recordPayment, setOpeningBottles } from "../actions";
+import { updateCustomer, saveAddress, recordPayment, setOpeningBottles, issueCreditNote, reversePayment, applyCredit } from "../actions";
 
 export const metadata: Metadata = { title: "Customer" };
 
@@ -34,13 +35,13 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const { data: c } = await supabase.from("customers").select("*").eq("id", id).maybeSingle();
   if (!c) notFound();
 
-  const [{ data: summary }, { data: addresses }, { data: orders }, { data: invoices }, { data: payments }, { data: routes }, { data: lists }, { data: companies }, { data: types }, bottleTx] =
+  const [{ data: summary }, { data: addresses }, { data: orders }, { data: invoices }, { data: payments }, { data: routes }, { data: lists }, { data: companies }, { data: types }, bottleTx, { data: credits }] =
     await Promise.all([
       supabase.rpc("customer_summary", { p_customer: id }),
       supabase.from("customer_addresses").select("*").eq("customer_id", id).eq("is_active", true).order("is_default", { ascending: false }),
       supabase.from("orders").select("id, order_no, status, requested_date, total, hold_reason").eq("customer_id", id).order("created_at", { ascending: false }).limit(10),
       supabase.from("invoices").select("id, invoice_no, invoice_date, due_date, total, balance, status").eq("customer_id", id).order("created_at", { ascending: false }).limit(10),
-      supabase.from("payments").select("id, payment_no, received_at, method, amount, reference, unallocated").eq("customer_id", id).order("received_at", { ascending: false }).limit(10),
+      supabase.from("payments").select("id, payment_no, received_at, method, amount, reference, unallocated, status, direction, cheque_status, reversal_reason").eq("customer_id", id).order("received_at", { ascending: false }).limit(10),
       supabase.from("routes").select("id, name").eq("is_active", true).order("name"),
       supabase.from("price_lists").select("id, name").eq("is_active", true).order("name"),
       supabase.from("bottle_companies").select("id, name, is_own").eq("is_active", true).order("is_own", { ascending: false }),
@@ -49,7 +50,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         ? supabase.from("bottle_transactions").select("id, created_at, txn_type, qty, from_type, from_id, to_type, to_id, reason, company_id")
             .or(`and(from_type.eq.customer,from_id.eq.${id}),and(to_type.eq.customer,to_id.eq.${id})`).order("created_at", { ascending: false }).limit(15)
         : Promise.resolve({ data: null }),
+      supabase.from("credit_notes").select("id, credit_note_no, credit_date, reason, total, unallocated, invoice:invoices(invoice_no)").eq("customer_id", id).order("created_at", { ascending: false }).limit(10),
     ]);
+  const canCredit = can(access, "payments.manage") && can(access, ["customers.credit", "accounting.manual_journal"]);
+  const canReverse = can(access, "payments.manage") && can(access, "accounting.reverse");
+  const unusedCredit = (credits ?? []).reduce((a, x) => a + Number(x.unallocated), 0);
   const s = summary as Summary | null;
   const typeLabel = (Object.fromEntries(CUSTOMER_TYPES) as Record<string, string>)[c.customer_type];
   const companyName = Object.fromEntries((companies ?? []).map((x) => [x.id, x.name]));
@@ -94,6 +99,20 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   </Select>
                 </Field>
                 <Field label="Notes" htmlFor="pay-notes"><Input id="pay-notes" name="notes" /></Field>
+              </FormDialog>
+            )}
+            {canCredit && (
+              <FormDialog trigger="Credit note" triggerSize="md" title="Issue a credit note" description="Reduces what the customer owes (price correction, leaking bottles, recalled stock). Posted to Sales Returns and output VAT."
+                submitLabel="Issue credit note" action={issueCreditNote} hidden={{ customer_id: c.id }}>
+                <Field label="Against invoice" htmlFor="cn-inv"><Select id="cn-inv" name="invoice_id" defaultValue="">
+                  <option value="">No specific invoice (oldest unpaid first)</option>
+                  {invoices?.filter((i) => i.status !== "void").map((i) => <option key={i.id} value={i.id}>{i.invoice_no} — {formatLKR(i.total)}</option>)}
+                </Select></Field>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Amount before VAT (Rs.)" htmlFor="cn-net" required><Input id="cn-net" name="net" type="number" min={0.01} step="0.01" required /></Field>
+                  <Field label="VAT %" htmlFor="cn-vat" hint="Same rate as the original sale"><Input id="cn-vat" name="tax_rate" type="number" min={0} step="any" defaultValue={18} /></Field>
+                </div>
+                <Field label="Reason" htmlFor="cn-r" required><Input id="cn-r" name="reason" required placeholder="e.g. 2 × 19L leaking, refilled free" /></Field>
               </FormDialog>
             )}
           </>
@@ -159,16 +178,39 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               <tbody>
                 {(payments ?? []).length === 0 && <tr><Td className="text-muted">No payments yet.</Td></tr>}
                 {payments?.map((p) => (
-                  <tr key={p.id}>
-                    <Td className="font-medium">{p.payment_no}<span className="block text-xs text-muted">{p.reference}</span></Td>
+                  <tr key={p.id} className={p.status === "reversed" ? "opacity-60" : ""}>
+                    <Td className="font-medium">{p.payment_no}<span className="block text-xs text-muted">{p.reference}</span>
+                      {p.status === "reversed" && <Badge tone="red" className="mt-1">{p.cheque_status === "returned" ? "Cheque returned" : "Reversed"}</Badge>}
+                      {p.reversal_reason && <span className="block text-xs text-muted">{p.reversal_reason}</span>}</Td>
                     <Td>{formatDateTime(p.received_at)}</Td>
-                    <Td>{humanize(p.method)}</Td>
-                    <Td className="num text-right">{formatLKR(p.amount)}{Number(p.unallocated) > 0 && <span className="block text-xs text-ola-700">{formatLKR(p.unallocated)} on account</span>}</Td>
+                    <Td>{p.direction === "out" ? "Refund" : humanize(p.method)}{p.method === "cheque" && p.status === "received" && <span className="block text-xs capitalize text-muted">{String(p.cheque_status ?? "").replace("_", " ")}</span>}</Td>
+                    <Td className="num text-right">{formatLKR(p.amount)}{Number(p.unallocated) > 0 && <span className="block text-xs text-ola-700">{formatLKR(p.unallocated)} on account</span>}
+                      {canReverse && p.status === "received" && !(p.method === "cheque" && ["deposited", "cleared"].includes(String(p.cheque_status))) && (
+                        <span className="mt-1 block"><ReasonDialog trigger="Reverse" triggerVariant="ghost" title={`Reverse ${p.payment_no}`}
+                          description="For a payment entered by mistake. The invoices it paid become unpaid again and the accounting entry is reversed."
+                          confirmLabel="Reverse payment" confirmVariant="danger" action={reversePayment} hidden={{ payment_id: p.id, customer_id: c.id }} /></span>
+                      )}</Td>
                   </tr>
                 ))}
               </tbody>
             </Table>
           </Card>
+
+          {(credits ?? []).length > 0 && (
+            <Card>
+              <CardHeader title="Credit notes" actions={unusedCredit > 0 && can(access, "payments.manage") ? (
+                <FormDialog trigger="Apply unused credit" title="Apply unused credit" description={`${formatLKR(unusedCredit)} of credit is not yet used. It is applied to the oldest unpaid invoices.`}
+                  submitLabel="Apply" action={applyCredit} hidden={{ customer_id: c.id }}><span /></FormDialog>) : undefined} />
+              <Table>
+                <tbody>{credits?.map((x) => (
+                  <tr key={x.id}>
+                    <Td className="font-medium">{x.credit_note_no}<span className="block text-xs text-muted">{x.reason}</span></Td>
+                    <Td>{formatDate(x.credit_date)}{(x.invoice as unknown as { invoice_no: string } | null)?.invoice_no && <span className="block text-xs text-muted">on {(x.invoice as unknown as { invoice_no: string }).invoice_no}</span>}</Td>
+                    <Td className="num text-right">{formatLKR(x.total)}{Number(x.unallocated) > 0 && <span className="block text-xs text-ola-700">{formatLKR(x.unallocated)} unused</span>}</Td>
+                  </tr>))}</tbody>
+              </Table>
+            </Card>
+          )}
         </div>
 
         <div className="space-y-6">

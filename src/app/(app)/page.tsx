@@ -44,7 +44,9 @@ export default async function DashboardPage() {
   }
 
   const supabase = await createClient();
-  const [{ data, error }, { data: opsData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary")]);
+  const [{ data, error }, { data: opsData }, { data: accData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary"),
+    can(access, ["accounting.view", "payments.manage"]) ? supabase.rpc("accounting_overview") : Promise.resolve({ data: null })]);
+  const acc = accData as { journals_waiting: number; expenses_waiting: number; cheques_in_hand: { count: number; amount: number } } | null;
   if (error) return <Alert tone="error">{error.message}</Alert>;
   const d = data as Dash;
   const ops = (opsData ?? {}) as { production?: Record<string, number> | null; stock?: Record<string, number> | null; purchasing?: Record<string, number> | null };
@@ -61,6 +63,9 @@ export default async function DashboardPage() {
   if (ops.purchasing?.orders_waiting || ops.purchasing?.requests_waiting)
     alerts.push({ tone: "warning", text: `${Number(ops.purchasing.orders_waiting) + Number(ops.purchasing.requests_waiting)} purchase(s) waiting for approval`, href: "/purchasing" });
   if (ops.purchasing?.invoices_on_hold) alerts.push({ tone: "error", text: `${ops.purchasing.invoices_on_hold} supplier invoice(s) on hold — they don't match the order`, href: "/purchasing" });
+  if (acc?.journals_waiting) alerts.push({ tone: "warning", text: `${acc.journals_waiting} manual journal(s) waiting for approval`, href: "/accounting/journals" });
+  if (acc?.expenses_waiting) alerts.push({ tone: "warning", text: `${acc.expenses_waiting} expense(s) waiting for approval`, href: "/expenses" });
+  if (acc?.cheques_in_hand?.count) alerts.push({ tone: "warning", text: `${acc.cheques_in_hand.count} cheque(s) in hand (${formatLKR(acc.cheques_in_hand.amount)}) — bank them`, href: "/accounting/banking" });
   if (d.deliveries.failed > 0) alerts.push({ tone: "warning", text: `${d.deliveries.failed} failed delivery(ies) today`, href: "/dispatch" });
   d.external_alerts.forEach((a) =>
     alerts.push({ tone: "warning", text: `${a.company}: ${a.held} bottles held (alert at ${a.limit}) — arrange a hand-over`, href: "/bottles/external" }),

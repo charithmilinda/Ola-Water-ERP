@@ -25,12 +25,12 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
   const supabase = await createClient();
   const start = new Date(`${from}T00:00:00+05:30`).toISOString();
   const end = new Date(new Date(`${to}T00:00:00+05:30`).getTime() + 86400000).toISOString();
-  let q = supabase.from("payments").select("id, payment_no, received_at, method, amount, reference, unallocated, status, customer:customers(id, name), run:route_runs(run_no)", { count: "exact" })
+  let q = supabase.from("payments").select("id, payment_no, received_at, method, amount, reference, unallocated, status, direction, cheque_status, customer:customers(id, name), run:route_runs(run_no)", { count: "exact" })
     .gte("received_at", start).lt("received_at", end).order("received_at", { ascending: false }).range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-  let tq = supabase.from("payments").select("method, amount").gte("received_at", start).lt("received_at", end).eq("status", "received");
+  let tq = supabase.from("payments").select("method, amount").gte("received_at", start).lt("received_at", end).eq("status", "received").eq("direction", "in");
   if (f.method) { q = q.eq("method", f.method); tq = tq.eq("method", f.method); }
   const [{ data, count }, { data: totals }] = await Promise.all([q, tq]);
-  type Row = { id: string; payment_no: string; received_at: string; method: string; amount: number; reference: string | null; unallocated: number; status: string;
+  type Row = { id: string; payment_no: string; received_at: string; method: string; amount: number; reference: string | null; unallocated: number; status: string; direction: string; cheque_status: string | null;
     customer: { id: string; name: string } | null; run: { run_no: string } | null };
   const byMethod = new Map<string, number>();
   totals?.forEach((t) => byMethod.set(t.method, (byMethod.get(t.method) ?? 0) + Number(t.amount)));
@@ -39,7 +39,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Payments" description="Money received from customers — at the office and by drivers." />
+      <PageHeader title="Payments" description="Money received from customers — at the office, at shops and by drivers. Reverse a payment or issue a credit note from the customer's page; cheques are banked under Finance → Banking." />
       <Card className="mb-4 p-4">
         <form className="flex flex-wrap items-end gap-3" method="get">
           <div><Label htmlFor="from">From</Label><Input id="from" name="from" type="date" defaultValue={from} /></div>
@@ -62,10 +62,11 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
               <tbody>
                 {(data as unknown as Row[]).map((p) => (
                   <tr key={p.id}>
-                    <Td className="font-medium">{p.payment_no}{p.reference && <span className="block text-xs text-muted">{p.reference}</span>}</Td>
+                    <Td className="font-medium">{p.payment_no}{p.reference && <span className="block text-xs text-muted">{p.reference}</span>}
+                      {p.status === "reversed" && <span className="block text-xs font-semibold text-red-700">{p.cheque_status === "returned" ? "Cheque returned" : "Reversed"}</span>}</Td>
                     <Td><Link href={`/customers/${p.customer?.id}`} className="text-ola-700 hover:underline">{p.customer?.name}</Link></Td>
                     <Td className="whitespace-nowrap">{formatDateTime(p.received_at)}</Td>
-                    <Td>{humanize(p.method)}</Td>
+                    <Td>{p.direction === "out" ? "Refund (cash out)" : humanize(p.method)}{p.method === "cheque" && p.status === "received" && <span className="block text-xs capitalize text-muted">{String(p.cheque_status ?? "").replace("_", " ")}</span>}</Td>
                     <Td>{p.run?.run_no ?? "Office"}</Td>
                     <Td className="num text-right">{formatLKR(p.amount)}{Number(p.unallocated) > 0 && <span className="block text-xs text-ola-700">{formatLKR(p.unallocated)} on account</span>}</Td>
                   </tr>

@@ -2,6 +2,34 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 2B — Finance (October 2026)
+
+**D-2B-01 · Money accounts.** Cash in hand, petty cash, each bank account and card/QR clearing are "money accounts", each tied to one ledger account. A new bank account automatically gets the next free code (1201…1209). Automatic postings from sales and purchases still use the default accounts; transfers, expenses, cheque deposits, reconciliations and VAT payments let the user choose the account.
+
+**D-2B-02 · Manual journals need two people.** They are submitted with a reason and posted only when a different user with `accounting.manual_journal` approves them (a Super Admin may approve their own, for single-person setups — audited). Direct posting (`post_manual_journal`) is kept only for finance managers (`accounting.period_close`).
+
+**D-2B-03 · Reports read the ledger.** Every report is calculated from journal lines at the moment it is opened, so it is always current and always agrees with the trial balance. Balance sheet: income and expense accounts are not closed to retained earnings by a year-end entry; the report shows "profit of earlier years" and "profit this financial year" instead. The financial year starts in April (setting `accounting.fiscal_year_start_month`).
+
+**D-2B-04 · Cash flow** uses the direct method: every entry that changes cash, bank, driver cash, shop cash or cheques in hand is classified by the other side of the entry (customers, suppliers, expenses, salaries, taxes, fixed assets, owners). Transfers between cash accounts cancel out.
+
+**D-2B-05 · Ageing** is based on each open invoice's due date against the chosen date, using today's unpaid balances. Unused payments and credit notes are shown separately as unused credit.
+
+**D-2B-06 · Cheques.** A cheque payment starts "in hand" (Dr Cheques in Hand). Depositing posts Dr Bank / Cr Cheques in Hand. A returned cheque posts Dr Receivable / Cr the bank (or Cheques in Hand if never banked), marks the payment reversed and adds negative allocations so the invoices become unpaid again — allocations remain append-only. Bank charges for a returned cheque are recorded as a bank charge; recharging them to the customer is not automated.
+
+**D-2B-07 · Payment reversal** posts the exact opposite of the payment's journal (today, in an open month) and needs both `payments.manage` and `accounting.reverse`. A banked cheque is handled as a returned cheque instead.
+
+**D-2B-08 · Credit notes** are their own documents (CN numbers): Dr Sales Returns & Allowances (4160), Dr VAT Output / Cr Receivable. They are applied to the chosen invoice, then to the oldest unpaid invoices; anything left is the customer's unused credit, applied later with "Apply unused credit". They need `payments.manage` plus `customers.credit` or `accounting.manual_journal`. Credit notes do not move stock.
+
+**D-2B-09 · Bank reconciliation** ticks ledger lines against the statement; it can be saved only when ticked items plus earlier reconciled items equal the statement balance exactly. Reconciled items cannot be reconciled again; reconciliations are append-only.
+
+**D-2B-10 · Expenses** below `approvals.expense_amount` (Rs. 25,000), or entered by someone with `expenses.approve`, post immediately; others wait for an approver who is not the person who entered them. "Not paid yet" expenses post to Expenses Payable (2150) and are paid later. Driver fuel and route expenses come with the Fleet module in Phase 2C.
+
+**D-2B-11 · VAT returns** clear everything in VAT Output and VAT Input up to the end of the return period: output is netted against input, the difference is paid from the chosen bank; excess input VAT stays as a credit carried forward. Returns cannot overlap and can be filed only for periods that have ended. SSCL is not calculated automatically yet.
+
+### Not verified in this phase
+- All flows were tested against PostgreSQL 16 (scenario 6, cheques, reversals, credit notes, journal approval, transfers, reconciliation, expenses, VAT return, report consistency: trial balance = 0, assets = liabilities + equity, cash-flow opening + movement = closing, ledger = trial balance). Screens were type-checked and production-built but not clicked through against the live project.
+- **Ask your accountant** to review the chart of accounts, the VAT treatment and the financial-year setting before relying on the reports.
+
 ## Phase 2A — Production, QC & purchasing (October 2026)
 
 **D-2A-01 · Phase 2 is delivered in three parts** (2A production/QC/purchasing, 2B finance, 2C people & assets) so each part can be tested in the live system before the next.
