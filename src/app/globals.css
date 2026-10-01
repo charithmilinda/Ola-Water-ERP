@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* OLA Water design tokens */
+@theme {
+  --color-ola-50: #eef6ff;
+  --color-ola-100: #d9ebff;
+  --color-ola-200: #bcdcff;
+  --color-ola-300: #8ec6ff;
+  --color-ola-400: #59a6fb;
+  --color-ola-500: #2f86f0;
+  --color-ola-600: #1868d6;   /* primary */
+  --color-ola-700: #1553ad;
+  --color-ola-800: #17478c;
+  --color-ola-900: #183d72;
+  --color-navy-900: #0b1f3a;  /* headings */
+  --color-navy-800: #12294a;
+  --color-navy-700: #1c3760;
+  --color-surface: #f4f8fc;   /* app background */
+  --color-line: #e2e9f2;      /* borders */
+  --color-muted: #5b6b82;     /* secondary text */
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+html, body {
+  background: var(--color-surface);
+  color: var(--color-navy-900);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular numbers everywhere numbers line up */
+.num { font-variant-numeric: tabular-nums; }
+
+/* Focus ring that is visible on every control */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-ola-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+dialog::backdrop { background: rgb(11 31 58 / 0.45); }
+
+/* Print: label sheets only */
+@media print {
+  .no-print { display: none !important; }
+  html, body { background: #fff; }
+}
