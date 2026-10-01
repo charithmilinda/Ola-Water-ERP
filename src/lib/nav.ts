@@ -80,6 +80,21 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "People",
+    items: [
+      { href: "/hr", label: "Employees", icon: "IdCard", permissions: ["hr.view", "payroll.run", "payroll.approve"] },
+      { href: "/hr/attendance", label: "Attendance & Leave", icon: "CalendarCheck", permissions: ["hr.view"] },
+      { href: "/payroll", label: "Payroll", icon: "HandCoins", permissions: ["payroll.run", "payroll.approve"] },
+    ],
+  },
+  {
+    label: "Fleet & Assets",
+    items: [
+      { href: "/fleet", label: "Fleet", icon: "Car", permissions: ["fleet.manage", "deliveries.manage"] },
+      { href: "/assets", label: "Fixed Assets", icon: "Cog", permissions: ["assets.manage", "accounting.view"] },
+    ],
+  },
+  {
     label: "Operations",
     items: [
       { href: "/inventory", label: "Inventory", icon: "Boxes", permissions: ["inventory.view"] },

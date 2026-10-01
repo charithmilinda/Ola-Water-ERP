@@ -17,9 +17,20 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 | **1B — Water shops & POS** | Water shops (company-owned and dealer), stock requests, shop till (offline), head-office counter, daily till closing, settlements, shop statements | **Done** |
 | **2A — Production, QC & purchasing** | Materials & bills of materials, production batches, QC holds/tests/release, batch tracing & recalls, suppliers, purchase requests/orders, goods received, 3-way matched supplier invoices, supplier payments, weighted average cost | **Done** |
 | **2B — Finance** | Accounting reports (P&L, balance sheet, cash flow, trial balance, ledger, ageing, VAT), manual journals with approval, periods, cash & bank accounts, cheques, payment reversals, credit notes, transfers, card settlements, bank reconciliation, expenses, VAT returns | **Done** |
-| 2C — People & assets | HR & payroll, fleet (incl. fuel logs and driver expenses), fixed assets & depreciation | Next |
-| 3 — Commercial & control | Distributors, CRM, complaints, notifications, documents, approvals | |
+| **2C — People & assets** | HR (employees, attendance, leave, advances), payroll with EPF/ETF/APIT and payslips, fleet (documents, fuel logs, services, driver road expenses, vehicle profitability), fixed assets & depreciation | **Done** |
+| 3 — Commercial & control | Distributors, CRM, complaints, notifications, documents, approvals | Next |
 | 4 — Intelligence | AI assistant, analytics, forecasting | |
+
+### What Phase 2C adds
+
+- **Employees** — departments, positions, personal and bank details, EPF number, monthly or daily pay, fixed allowances and deductions, link to a system login (drivers).
+- **Attendance & leave** — mark the day for everyone on one screen (present, half day, absent, overtime hours); leave requests with balances and approval; public holidays.
+- **Salary advances** — paid out and recovered automatically from the next payrolls.
+- **Payroll** — prepare a month (no-pay, overtime, allowances, EPF 8%/12%, ETF 3%, APIT), one-off bonuses or deductions, **approval by a second person**, salary journal, payment from the bank, printable payslips, EPF/ETF/APIT monthly list and payment.
+- **Fleet** — vehicle details, insurance / revenue licence / emission test with expiry alerts, fuel log with km per litre, services and repairs with next-service alerts, **vehicle profitability**.
+- **Driver road expenses** — fuel, tolls and repairs recorded on the phone (works offline, bill photo); the cash to hand in at check-in is reduced, and a rejected expense becomes a cash shortage.
+- **Fixed assets** — register with categories, straight-line or reducing-balance depreciation, assets owned before go-live, monthly depreciation run, maintenance history, disposal / sale with gain or loss.
+- **Dashboard** — leave waiting, payroll to approve/pay, vehicles needing attention, depreciation due.
 
 ### What Phase 2B adds
 
@@ -132,7 +143,7 @@ Import the repository in Vercel and add the same three environment variables. `S
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B, 2A and 2B scenarios) on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B, 2A, 2B and 2C scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build

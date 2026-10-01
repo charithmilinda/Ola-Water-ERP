@@ -37,6 +37,8 @@ export type RunData = {
   bottle_values: { bottle_type_id: string; company_id: string; deposit: number; external_charge: number }[];
   settings: { external_policy_default: string; require_confirmation: boolean };
   stops: Stop[];
+  driver_expenses?: DriverExpense[];
+  expense_categories?: { code: string; name: string }[];
   fetched_at?: string;
 };
 
@@ -60,3 +62,5 @@ export type LocalReceipt = {
   bottles: { issued: Record<string, number>; returned: Record<string, number>; external: { company: string; qty: number }[]; balance: number };
   pending_sync?: boolean;
 };
+
+export type DriverExpense = { id: string; expense_no: string | null; category: string; total: number; status: string; description: string | null; pending?: boolean };

@@ -44,8 +44,16 @@ export default async function DashboardPage() {
   }
 
   const supabase = await createClient();
-  const [{ data, error }, { data: opsData }, { data: accData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary"),
-    can(access, ["accounting.view", "payments.manage"]) ? supabase.rpc("accounting_overview") : Promise.resolve({ data: null })]);
+  const [{ data, error }, { data: opsData }, { data: accData }, { data: paData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary"),
+    can(access, ["accounting.view", "payments.manage"]) ? supabase.rpc("accounting_overview") : Promise.resolve({ data: null }),
+    supabase.rpc("people_assets_summary")]);
+  type PA = {
+    hr: { headcount: number; pending_leave: number; attendance_today: number } | null;
+    payroll: { last_month_status: string | null; drafts: number; unpaid: number } | null;
+    fleet: { alerts: number; fuel_month: number; driver_expenses_pending: number } | null;
+    assets: { count: number; book_value: number; last_depreciation: string | null; depreciation_due: boolean } | null;
+  };
+  const pa = (paData ?? {}) as Partial<PA>;
   const acc = accData as { journals_waiting: number; expenses_waiting: number; cheques_in_hand: { count: number; amount: number } } | null;
   if (error) return <Alert tone="error">{error.message}</Alert>;
   const d = data as Dash;
@@ -66,6 +74,13 @@ export default async function DashboardPage() {
   if (acc?.journals_waiting) alerts.push({ tone: "warning", text: `${acc.journals_waiting} manual journal(s) waiting for approval`, href: "/accounting/journals" });
   if (acc?.expenses_waiting) alerts.push({ tone: "warning", text: `${acc.expenses_waiting} expense(s) waiting for approval`, href: "/expenses" });
   if (acc?.cheques_in_hand?.count) alerts.push({ tone: "warning", text: `${acc.cheques_in_hand.count} cheque(s) in hand (${formatLKR(acc.cheques_in_hand.amount)}) — bank them`, href: "/accounting/banking" });
+  if (pa.hr?.pending_leave) alerts.push({ tone: "warning", text: `${pa.hr.pending_leave} leave request(s) waiting for approval`, href: "/hr/attendance" });
+  if (pa.payroll?.drafts) alerts.push({ tone: "warning", text: `${pa.payroll.drafts} payroll run(s) waiting for approval`, href: "/payroll" });
+  if (pa.payroll?.unpaid) alerts.push({ tone: "warning", text: `${pa.payroll.unpaid} approved payroll(s) not yet paid`, href: "/payroll" });
+  if (pa.payroll && !pa.payroll.last_month_status && new Date().getDate() >= 25) alerts.push({ tone: "warning", text: "Last month's payroll has not been prepared", href: "/payroll" });
+  if (pa.fleet?.alerts) alerts.push({ tone: "warning", text: `${pa.fleet.alerts} vehicle(s) need attention — documents or service due`, href: "/fleet" });
+  if (pa.fleet?.driver_expenses_pending && !acc?.expenses_waiting) alerts.push({ tone: "warning", text: `${pa.fleet.driver_expenses_pending} driver road expense(s) waiting for approval`, href: "/expenses?show=pending_approval" });
+  if (pa.assets?.depreciation_due) alerts.push({ tone: "warning", text: "Depreciation for last month has not been run", href: "/assets" });
   if (d.deliveries.failed > 0) alerts.push({ tone: "warning", text: `${d.deliveries.failed} failed delivery(ies) today`, href: "/dispatch" });
   d.external_alerts.forEach((a) =>
     alerts.push({ tone: "warning", text: `${a.company}: ${a.held} bottles held (alert at ${a.limit}) — arrange a hand-over`, href: "/bottles/external" }),
@@ -104,6 +119,9 @@ export default async function DashboardPage() {
         {ops.production && <Stat label="Produced today" value={n(ops.production.today_produced)} hint={`${ops.production.qc_hold} batch(es) on QC hold · ${n(ops.production.quarantine_qty)} in quarantine`} />}
         {ops.stock && <Stat label="Stock value" value={formatLKR(Number(ops.stock.finished_value) + Number(ops.stock.materials_value))} hint={`Products ${formatLKR(ops.stock.finished_value)} · materials ${formatLKR(ops.stock.materials_value)}`} />}
         {ops.purchasing && <Stat label="Owed to suppliers" value={formatLKR(ops.purchasing.payable)} hint={`${formatLKR(ops.purchasing.payable_overdue)} overdue · ${formatLKR(ops.purchasing.due_7_days)} due in 7 days`} />}
+        {pa.hr && <Stat label="Employees" value={n(pa.hr.headcount)} hint={`${n(pa.hr.attendance_today)} attendance marked today`} />}
+        {pa.fleet && <Stat label="Fuel this month" value={formatLKR(pa.fleet.fuel_month)} hint={`${pa.fleet.alerts} vehicle alert(s)`} />}
+        {pa.assets && <Stat label="Fixed assets" value={formatLKR(pa.assets.book_value)} hint={`${pa.assets.count} asset(s) at book value${pa.assets.last_depreciation ? ` · depreciated to ${pa.assets.last_depreciation}` : ""}`} />}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

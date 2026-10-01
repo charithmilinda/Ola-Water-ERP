@@ -37,7 +37,7 @@ export const kv = {
 
 export type OutboxItem = {
   id: string; // client_txn_id
-  fn: "complete_delivery" | "fail_delivery" | "driver_start_run";
+  fn: "complete_delivery" | "fail_delivery" | "driver_start_run" | "driver_record_expense";
   args: Record<string, unknown>;
   run_id: string;
   delivery_id?: string;

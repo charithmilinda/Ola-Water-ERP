@@ -24,7 +24,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const { data: r } = await supabase.from("route_runs").select("*, route:routes(name), vehicle:vehicles(registration_no, location_id), driver:profiles!route_runs_driver_id_fkey(full_name, phone)").eq("id", id).maybeSingle();
   if (!r) notFound();
   const vehLoc = (r.vehicle as { location_id: string }).location_id;
-  const [{ data: stops }, { data: suggested }, { data: products }, { data: stock }, { data: vstock }, { data: vbottles }, { data: companies }, { data: types }, { data: cashPay }, { data: exceptions }] = await Promise.all([
+  const [{ data: stops }, { data: suggested }, { data: products }, { data: stock }, { data: vstock }, { data: vbottles }, { data: companies }, { data: types }, { data: cashPay }, { data: exceptions }, { data: roadExp }] = await Promise.all([
     supabase.from("deliveries").select("id, delivery_no, stop_sequence, status, failure_reason, completed_at, invoice_id, summary, customer:customers(id, name, phone)").eq("run_id", id).order("stop_sequence"),
     r.status === "planned" ? supabase.rpc("run_suggested_load", { p_run: id }) : Promise.resolve({ data: [] }),
     supabase.from("products").select("id, name").eq("is_active", true).eq("item_type", "finished_good").order("sort_order"),
@@ -35,12 +35,17 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     supabase.from("bottle_types").select("id, name"),
     supabase.from("payments").select("amount").eq("run_id", id).eq("method", "cash").eq("status", "received"),
     supabase.from("operation_exceptions").select("id, exception_type, severity, status, description, resolution, resolution_note").eq("run_id", id).order("created_at"),
+    supabase.from("expenses").select("id, expense_no, total, status, description, category:expense_categories(name)").eq("run_id", id).eq("pay_method", "driver_cash").order("created_at"),
   ]);
   const b = statusBadge(RUN_STATUS, r.status);
   const co = Object.fromEntries((companies ?? []).map((c) => [c.id, c]));
   const ty = Object.fromEntries((types ?? []).map((t) => [t.id, t.name]));
   const prodName = Object.fromEntries((products ?? []).map((p) => [p.id, p.name]));
   const cashCollected = (cashPay ?? []).reduce((a, p) => a + Number(p.amount), 0);
+  type RoadExp = { id: string; expense_no: string; total: number; status: string; description: string | null; category: { name: string } | null };
+  const roadList = (roadExp ?? []) as unknown as RoadExp[];
+  const roadPaid = roadList.filter((x) => x.status !== "rejected").reduce((a, x) => a + Number(x.total), 0);
+  const cashWithDriver = Number(r.cash_float) + cashCollected - roadPaid;
   const manageStock = can(access, ["inventory.manage", "deliveries.manage"]);
   type Stop = { id: string; delivery_no: string; stop_sequence: number; status: string; failure_reason: string | null; completed_at: string | null; invoice_id: string | null;
     summary: { total?: number; paid?: number; bottles?: { returned?: Record<string, number>; external?: { company: string; qty: number }[] } } | null; customer: { id: string; name: string; phone: string } | null };
@@ -57,7 +62,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Stops" value={`${stopList.filter((s) => ["delivered", "partially_delivered", "failed"].includes(s.status)).length} / ${stopList.filter((s) => s.status !== "cancelled").length}`} hint={`${stopList.filter((s) => s.status === "failed").length} failed`} />
         <Stat label="Invoiced on this run" value={formatLKR(sales)} />
-        <Stat label="Cash with driver" value={formatLKR(Number(r.cash_float) + cashCollected)} hint={`Float ${formatLKR(r.cash_float)} + collected ${formatLKR(cashCollected)}`} />
+        <Stat label="Cash with driver" value={formatLKR(cashWithDriver)} hint={`Float ${formatLKR(r.cash_float)} + collected ${formatLKR(cashCollected)}${roadPaid ? ` − road expenses ${formatLKR(roadPaid)}` : ""}`} />
         <Stat label="Loaded" value={r.loaded_at ? formatDateTime(r.loaded_at) : "Not yet"} hint={r.driver_confirmed_at ? `Driver confirmed ${formatDateTime(r.driver_confirmed_at)}` : "Driver has not confirmed"} />
       </div>
 
@@ -78,12 +83,26 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
             {stopList.some((s) => s.status === "pending") && r.status === "in_progress" ? (
               <Alert tone="info">{stopList.filter((s) => s.status === "pending").length} stop(s) are still pending. The driver must complete or fail every stop before check-in.</Alert>
             ) : (
-              <CheckinForm runId={id} cashExpected={Number(r.cash_float) + cashCollected}
+              <CheckinForm runId={id} cashExpected={cashWithDriver}
                 products={(vstock ?? []).map((s) => ({ product_id: s.product_id, name: prodName[s.product_id] ?? "Product", qty: Number(s.qty) }))}
                 bottles={(vbottles ?? []).filter((x) => !(co[x.company_id]?.is_own && x.fill_state === "full")).map((x) => ({
                   company_id: x.company_id, company: co[x.company_id]?.name ?? "", bottle_type_id: x.bottle_type_id, type: ty[x.bottle_type_id] ?? "", fill_state: x.fill_state, qty: x.qty }))} />
             )}
           </CardBody>
+        </Card>
+      )}
+
+      {roadList.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader title="Road expenses paid by the driver" description="Check the bills. A refused expense becomes a cash shortage for the driver."
+            actions={<Link href="/expenses?show=pending_approval" className="text-sm font-medium text-ola-700 hover:underline">Approve in Expenses</Link>} />
+          <Table>
+            <thead><tr><Th>Expense</Th><Th>For</Th><Th>Status</Th><Th className="text-right">Amount</Th></tr></thead>
+            <tbody>{roadList.map((x) => (
+              <tr key={x.id}><Td className="font-mono text-xs">{x.expense_no}</Td><Td>{x.category?.name}{x.description && <span className="block text-xs text-muted">{x.description}</span>}</Td>
+                <Td><Badge tone={x.status === "rejected" ? "red" : x.status === "pending_approval" ? "amber" : "green"}>{x.status === "pending_approval" ? "Waiting" : x.status === "rejected" ? "Refused" : "Accepted"}</Badge></Td>
+                <Td className={`num text-right ${x.status === "rejected" ? "line-through text-muted" : ""}`}>{formatLKR(x.total)}</Td></tr>))}</tbody>
+          </Table>
         </Card>
       )}
 

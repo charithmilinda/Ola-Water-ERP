@@ -1,4 +1,9 @@
 import {
+  IdCard,
+  CalendarCheck,
+  HandCoins,
+  Car,
+  Cog,
   Banknote,
   BookOpen,
   Landmark,
@@ -63,6 +68,11 @@ export const NAV_ICONS = {
   Banknote,
   BookOpen,
   Receipt,
+  IdCard,
+  CalendarCheck,
+  HandCoins,
+  Car,
+  Cog,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

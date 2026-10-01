@@ -51,7 +51,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
   const list = (rows ?? []) as unknown as X[];
   const receipts: Record<string, string> = {};
   for (const x of list.filter((r) => r.receipt_path).slice(0, 60)) {
-    const { data: u } = await supabase.storage.from("expense-receipts").createSignedUrl(x.receipt_path!, 3600);
+    const { data: u } = await supabase.storage.from(x.pay_method === "driver_cash" ? "delivery-proofs" : "expense-receipts").createSignedUrl(x.receipt_path!, 3600);
     if (u?.signedUrl) receipts[x.id] = u.signedUrl;
   }
   const monthTotal = list.filter((x) => x.status !== "rejected" && x.expense_date >= from).reduce((a, x) => a + Number(x.total), 0);
@@ -102,7 +102,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                 <Td>{x.category?.name}</Td>
                 <Td className="whitespace-nowrap">{formatDate(x.expense_date)}</Td>
                 <Td className="num text-right">{formatLKR(x.total)}{Number(x.vat_amount) > 0 && <span className="block text-xs text-muted">incl. VAT {formatLKR(x.vat_amount)}</span>}
-                  <span className="block text-xs text-muted">{x.pay_method === "on_credit" ? "On credit" : humanize(x.pay_method)}</span></Td>
+                  <span className="block text-xs text-muted">{x.pay_method === "on_credit" ? "On credit" : x.pay_method === "driver_cash" ? "Paid by driver on the road" : humanize(x.pay_method)}</span></Td>
                 <Td><Badge tone={st.tone}>{st.label}</Badge>{x.decision_note && <span className="block text-xs text-muted">{x.decision_note}</span>}</Td>
                 <Td className="space-x-1 whitespace-nowrap text-right">
                   {approve && x.status === "pending_approval" && x.created_by !== me.user?.id && (

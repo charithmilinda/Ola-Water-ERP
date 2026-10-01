@@ -8,6 +8,7 @@ import { OlaMark } from "@/components/layout/logo";
 import { kv } from "./store";
 import { loadRun, loadRuns, saveRunLocal, useDriverSync } from "./sync";
 import { StopView } from "./stop-view";
+import { RoadExpenses, expensesPaid } from "./road-expenses";
 import type { LocalReceipt, RunData, RunSummary } from "./types";
 
 type View = { screen: "runs" } | { screen: "run"; runId: string } | { screen: "stop"; runId: string; deliveryId: string } | { screen: "receipt"; runId: string; deliveryId: string };
@@ -55,6 +56,7 @@ export function DriverApp({ userName, signOut }: { userName: string; signOut: ()
     await enqueue({ id, fn: "driver_start_run", args: { p_run: run.run.id }, run_id: run.run.id, label: `Start ${run.run.run_no}`, created_at: new Date().toISOString(), status: "pending", attempts: 0 });
   };
 
+  const cashWithYou = run ? Number(run.run.cash_float) + Number(run.cash_collected) - expensesPaid(run) : 0;
   const errors = items.filter((i) => i.status === "error");
   const pending = items.filter((i) => i.status === "pending");
 
@@ -113,7 +115,8 @@ export function DriverApp({ userName, signOut }: { userName: string; signOut: ()
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">{run.run.route ?? "Run"} · {run.run.vehicle}</p>
               <h1 className="text-xl font-semibold">{run.run.run_no}</h1>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg bg-surface p-2"><p className="text-xs text-muted">Cash with you</p><p className="num font-semibold">{rs(Number(run.run.cash_float) + Number(run.cash_collected))}</p></div>
+                <div className="rounded-lg bg-surface p-2"><p className="text-xs text-muted">Cash with you</p><p className="num font-semibold">{rs(cashWithYou)}</p>
+                  {expensesPaid(run) > 0 && <p className="text-xs text-muted">after {rs(expensesPaid(run))} expenses</p>}</div>
                 <div className="rounded-lg bg-surface p-2"><p className="text-xs text-muted">Stops done</p><p className="num font-semibold">{run.stops.filter((s) => s.status !== "pending").length} / {run.stops.length}</p></div>
               </div>
               <details className="mt-3 text-sm">
@@ -161,8 +164,13 @@ export function DriverApp({ userName, signOut }: { userName: string; signOut: ()
               </ul>
             )}
             {run.run.status === "in_progress" && run.stops.every((s) => s.status !== "pending") && (
-              <p className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900">All stops done. Return to the warehouse for check-in and hand in the cash: <strong>{rs(Number(run.run.cash_float) + Number(run.cash_collected))}</strong>.</p>
+              <p className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900">All stops done. Return to the warehouse for check-in and hand in the cash: <strong>{rs(cashWithYou)}</strong> and the bills for your road expenses.</p>
             )}
+            <RoadExpenses run={run} cashWithYou={cashWithYou} onAdd={async (item, updated) => {
+              setRun(updated);
+              await saveRunLocal(updated);
+              await enqueue(item);
+            }} />
           </div>
         )}
 

@@ -36,7 +36,11 @@ export function useDriverSync() {
           const { error } = await sb.storage.from("delivery-proofs").upload(item.photo.path, blob, { contentType: "image/jpeg", upsert: true });
           if (error && isNetworkError(error)) break;
           item.photo.uploaded = !error;
-          if (!error) (item.args.p as Record<string, Record<string, unknown>>).confirmation.photo_path = item.photo.path;
+          if (!error) {
+            const p = item.args.p as Record<string, unknown> & { confirmation?: Record<string, unknown> };
+            if (p.confirmation) p.confirmation.photo_path = item.photo.path;
+            else p.receipt_path = item.photo.path;
+          }
           await outbox.put(item);
         }
         // 2. the transaction itself (idempotent on client_txn_id)
@@ -115,12 +119,18 @@ export async function loadRun(runId: string): Promise<{ run: RunData | null; off
     const fresh = { ...(data as RunData), fetched_at: new Date().toISOString() };
     // keep local, not-yet-synced results on top of server data
     const local = await kv.get<RunData>(`run:${runId}`);
-    const pending = new Set((await outbox.all()).filter((i) => i.run_id === runId).map((i) => i.delivery_id));
+    const queued = (await outbox.all()).filter((i) => i.run_id === runId);
+    const pending = new Set(queued.map((i) => i.delivery_id));
+    const pendingIds = new Set(queued.map((i) => i.id));
     if (local) {
       fresh.stops = fresh.stops.map((s) => {
         const l = local.stops.find((x) => x.delivery_id === s.delivery_id);
         return l?.local && pending.has(s.delivery_id) ? { ...s, status: l.status, local: l.local } : s;
       });
+      // road expenses entered on the phone but not yet on the server
+      const known = new Set((fresh.driver_expenses ?? []).map((x) => x.id));
+      const waiting = (local.driver_expenses ?? []).filter((x) => x.pending && pendingIds.has(x.id) && !known.has(x.id));
+      fresh.driver_expenses = [...(fresh.driver_expenses ?? []), ...waiting];
     }
     await kv.set(`run:${runId}`, fresh);
     return { run: fresh, offline: false };

@@ -2,6 +2,34 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 2C — People, fleet & assets (October 2026)
+
+**D-2C-01 · Statutory rates are effective-dated data, not code.** EPF (employee 8%, employer 12%), ETF (3%) and the monthly APIT table are stored with a start date and can be changed in Payroll → Statutory settings without a software update. The seeded APIT table (from 1 April 2025: first Rs. 150,000 a month tax-free, then 6/18/24/30/36%) is a starting point — **your accountant must confirm it, and the EPF/ETF rates, before the first real payroll**. APIT is calculated on gross pay less non-taxable allowances; EPF/ETF on basic salary less no-pay plus allowances marked "EPF liable".
+
+**D-2C-02 · Payroll formulas and settings.** No-pay deduction = basic ÷ `payroll.nopay_divisor` (30) × no-pay days. Overtime = basic ÷ `payroll.ot_divisor` (240) × `payroll.ot_multiplier` (1.5) × hours. Daily-paid workers are paid daily rate × days present (half day = 0.5) plus overtime. All three settings can be changed in System Settings.
+
+**D-2C-03 · Payroll needs two people.** One person (`payroll.run`) prepares the month; a different person with `payroll.approve` approves it (a Super Admin may approve their own, for single-person setups — audited). Approval posts the salary journal (Dr Salaries, Dr EPF/ETF expense / Cr Salaries payable, EPF payable, ETF payable, APIT payable, staff advances, other deductions) and locks that month's attendance. Salary payment is a separate step (`payments.manage`) from a bank or cash account. EPF/ETF/APIT are paid to the authorities from the statutory screen.
+
+**D-2C-04 · Leave** counts working days only — Sundays and the public holidays entered in Attendance are skipped. Entitlements come from the leave type (Annual 14, Casual 7, Medical 7, Maternity 84 by default — edit to match your policy); no-pay leave reduces pay. Approved leave fills attendance automatically.
+
+**D-2C-05 · Salary advances** are paid from cash/bank (Dr Staff advances) and recovered from the following payrolls in the instalment chosen; the outstanding balance is shown on the employee.
+
+**D-2C-06 · Postings into closed months.** If a payroll, depreciation run or asset registration belongs to an accounting month that is already closed, the entry is posted on today's date instead (in the open month) with the original month in its description, so closed months stay closed.
+
+**D-2C-07 · Depreciation** runs monthly, in order (no month can be skipped, none in the future, each month once): straight line = (cost − residual) ÷ useful life in months; reducing balance = book value × rate ÷ 12. It stops at the residual value. Assets bought before go-live are entered with "depreciation to date" so the ledger starts correctly (Dr Asset / Cr Accumulated depreciation, Cr Opening balance equity).
+
+**D-2C-08 · Disposal** posts the gain or loss against book value (4920 Gain / 6410 Loss on disposal). Run depreciation up to the disposal month first.
+
+**D-2C-09 · Fleet costs are expenses.** Fuel, services, repairs, insurance, revenue licences and emission tests are recorded as expenses linked to the vehicle (and to the run when the driver paid), so they go through the same approval limits and appear in vehicle profitability. Alerts fire `fleet.document_alert_days` (30) days before a document expires and `fleet.service_alert_km` (500 km) before a service is due.
+
+**D-2C-10 · Driver road expenses.** A driver can record fuel, tolls & parking, a repair or vehicle documents on the phone (offline, with a bill photo), only while the run is on the road and only up to the cash carried. They are paid from the driver's cash (Cr Driver cash), so the cash expected at check-in is reduced. Small amounts post at once; above the expense approval limit they wait for approval. **If the office rejects a driver expense, the amount becomes a cash shortage exception for that driver.**
+
+**D-2C-11 · Vehicle profitability** = sales delivered by that vehicle (before VAT) − fuel − repairs/services − other vehicle costs − depreciation. Driver wages are not allocated to vehicles.
+
+### Not verified in this phase
+- All payroll, leave, advance, statutory, asset, depreciation, disposal, fleet and driver-expense flows were tested against PostgreSQL 16 (including a full September payroll with no-pay, OT, EPF/ETF/APIT and advance recovery checked by hand, and the ledger balancing after every flow). Screens were type-checked and production-built but not clicked through against the live project.
+- **Ask your accountant** to confirm the APIT table, EPF/ETF rates, the treatment of each allowance (EPF liable / taxable), and the depreciation rates per asset category before the first real payroll and month-end.
+
 ## Phase 2B — Finance (October 2026)
 
 **D-2B-01 · Money accounts.** Cash in hand, petty cash, each bank account and card/QR clearing are "money accounts", each tied to one ledger account. A new bank account automatically gets the next free code (1201…1209). Automatic postings from sales and purchases still use the default accounts; transfers, expenses, cheque deposits, reconciliations and VAT payments let the user choose the account.
@@ -22,7 +50,7 @@ Assumptions and decisions made while building, as required by the master prompt 
 
 **D-2B-09 · Bank reconciliation** ticks ledger lines against the statement; it can be saved only when ticked items plus earlier reconciled items equal the statement balance exactly. Reconciled items cannot be reconciled again; reconciliations are append-only.
 
-**D-2B-10 · Expenses** below `approvals.expense_amount` (Rs. 25,000), or entered by someone with `expenses.approve`, post immediately; others wait for an approver who is not the person who entered them. "Not paid yet" expenses post to Expenses Payable (2150) and are paid later. Driver fuel and route expenses come with the Fleet module in Phase 2C.
+**D-2B-10 · Expenses** below `approvals.expense_amount` (Rs. 25,000), or entered by someone with `expenses.approve`, post immediately; others wait for an approver who is not the person who entered them. "Not paid yet" expenses post to Expenses Payable (2150) and are paid later. Driver fuel and route expenses: see D-2C-10.
 
 **D-2B-11 · VAT returns** clear everything in VAT Output and VAT Input up to the end of the return period: output is netted against input, the difference is paid from the chosen bank; excess input VAT stays as a credit carried forward. Returns cannot overlap and can be filed only for periods that have ended. SSCL is not calculated automatically yet.
 

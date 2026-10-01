@@ -154,6 +154,38 @@ export const STOCK_STATUS: Record<string, { label: string; tone: BadgeTone }> = 
   damaged: { label: "Damaged", tone: "neutral" },
 };
 
+export const EMPLOYMENT_TYPES = [["permanent", "Permanent"], ["probation", "Probation"], ["contract", "Contract"], ["casual", "Casual / daily"]] as const;
+
+export const ATTENDANCE_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  present: { label: "Present", tone: "green" },
+  half_day: { label: "Half day", tone: "amber" },
+  absent: { label: "Absent", tone: "red" },
+  leave: { label: "Leave", tone: "blue" },
+  holiday: { label: "Holiday", tone: "neutral" },
+  off: { label: "Day off", tone: "neutral" },
+};
+
+export const LEAVE_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  pending: { label: "Waiting", tone: "amber" },
+  approved: { label: "Approved", tone: "green" },
+  rejected: { label: "Rejected", tone: "red" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+};
+
+export const PAYROLL_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  draft: { label: "Draft — check it", tone: "amber" },
+  approved: { label: "Approved — to pay", tone: "blue" },
+  paid: { label: "Paid", tone: "green" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+};
+
+export const VEHICLE_DOC_TYPES = [["insurance", "Insurance"], ["revenue_licence", "Revenue licence"], ["emission_test", "Emission test"],
+  ["fitness", "Fitness certificate"], ["other", "Other"]] as const;
+export const SERVICE_KINDS = [["service", "Scheduled service"], ["repair", "Repair"], ["tyres", "Tyres"], ["battery", "Battery"], ["accident", "Accident damage"],
+  ["other", "Other"]] as const;
+export const FUEL_TYPES = [["diesel", "Diesel"], ["petrol", "Petrol"], ["electric", "Electric"], ["hybrid", "Hybrid"], ["other", "Other"]] as const;
+export const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 export function statusBadge(map: Record<string, { label: string; tone: BadgeTone }>, s: string) {
   return map[s] ?? { label: s.replace(/_/g, " "), tone: "neutral" as BadgeTone };
 }
