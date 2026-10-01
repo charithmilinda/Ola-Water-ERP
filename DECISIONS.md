@@ -2,6 +2,42 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 1A — Core bottle & delivery loop (October 2026)
+
+**D-101 · Two ledgers.** Filled product stock (`inventory_*`) and returnable containers (`bottle_*`) are separate ledgers. Moving a returnable product (e.g. 19L) automatically moves the same number of full OLA bottles in count mode.
+
+**D-102 · Serialised and counted bottles together.** Balances always count every bottle; tagged bottles additionally have their own record and history. When a tagged bottle is scanned somewhere other than where its record says, the scan is accepted, counts follow the physical event, the record is corrected and a `bottle_location` exception is raised (info if the record pointed at an OLA location, warning if at another customer).
+
+**D-103 · Never block the driver.** A label printed but not yet registered is registered at the door; an unknown label is counted and flagged; an `EXT-` tag scanned among OLA bottles is treated as that company's bottle (company from the tag prefix). Only physically impossible actions are refused (delivering more than is on the vehicle).
+
+**D-104 · External bottle policy** resolves customer → company → system default (`accept_one_for_one`, as chosen by OLA). Under one-for-one, the customer's OLA bottle count drops by one and the replaced OLA bottle is recorded as gone (to "outside"), so exposure reports show it.
+
+**D-105 · Deposits** (deposit-model customers) are re-balanced on every delivery: deposits held always equal the OLA bottles the customer holds; extra bottles add a deposit line, returned bottles refund it on the invoice. Deposits are a liability (2200), never revenue. Customers' bottles held before go-live are entered as opening balances (without deposit history).
+
+**D-106 · Bottle model defaults** follow OLA's answer: households pay a deposit; businesses borrow up to a limit (office 10, restaurant 10, shop 10, hotel 20, supermarket 20, institution 20, corporate 20, distributor 50, water shop 50). All are placeholders, editable in Products & Prices → Customer type defaults.
+
+**D-107 · Holds instead of approvals.** Until the approval workflow (Phase 3), orders that breach credit limit, overdue balance or bottle limit go **on hold** and need someone with `customers.credit` to release them, with a reason. Discounts above the setting need `pos.discount`.
+
+**D-108 · Prices include VAT by default** (Sri Lankan retail style); VAT is extracted from the line total. Each price list can be switched to VAT-exclusive. VAT and other rates are effective-dated and must be set by management — no rate is seeded. SSCL is not yet calculated on invoices; **ask your accountant** how OLA applies SSCL and it will be added as a tax component.
+
+**D-109 · Invoices on delivery.** Every completed delivery creates an invoice (tax invoice when the customer has a VAT number), posts it to the ledger, applies any credit on account, then the payment. Invoice numbers are assigned when the delivery reaches the server (gapless); a receipt printed offline shows "NOT YET SYNCED" and no number.
+
+**D-110 · Check-in is the control point.** The warehouse counts products, empties per company and cash; every difference becomes an exception. A run closes only when all differences are resolved (found / charge driver / write off / acknowledge). Cash shortages charged to the driver stay in "Driver Cash in Transit" (1120) until HR deductions exist (Phase 2).
+
+**D-111 · Driver app offline design.** Single-page app at `/driver`; run data cached in IndexedDB; transactions queued in an outbox with a client-generated id and replayed through the same database functions (idempotent). Business errors are shown to the driver and never dropped. A service worker keeps the app shell available offline. OTP confirmation needs an SMS provider and arrives with Notifications (Phase 3); signature and photo are available now.
+
+**D-112 · Photos** are compressed on the phone (≈1024 px JPEG) and stored in a private storage bucket `delivery-proofs`; signatures are stored with the delivery (small JPEG).
+
+**D-113 · Cost of sales** posts at product cost price on delivery when a cost is set. Production costing replaces this in Phase 2.
+
+**D-114 · Opening balances.** Go-live counts are entered as opening stock (Inventory → Receive → Opening), opening bottles at locations and customers (Bottles / Customer pages). Opening stock posts to Opening Balance Equity.
+
+**D-115 · Demo data** (`supabase/seed.sql`) is only for a separate test project; it is never part of the live update files.
+
+### Not verified in this phase
+- As in Phase 0, screens are type-checked and built, and all database behaviour is tested (including upgrading a database set up with the Phase 0 file), but the app has not been clicked through against the live Supabase project yet.
+- Camera scanning and Bluetooth printing must be tried on OLA's actual phones and printer.
+
 ## Phase 0 — Foundation (October 2026)
 
 **D-001 · Business logic in PostgreSQL functions.** All writes to sensitive tables go through `SECURITY DEFINER` functions in `public` that check permissions first. There are no INSERT/UPDATE/DELETE RLS policies for users; RLS is used for reads. This gives one place for every rule and makes the API safe even if someone calls Supabase directly with a user token.

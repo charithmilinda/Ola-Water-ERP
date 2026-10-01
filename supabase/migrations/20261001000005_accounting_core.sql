@@ -90,6 +90,7 @@ create trigger journal_lines_no_truncate before truncate on public.journal_lines
 create or replace function app.check_entry_balanced()
 returns trigger
 language plpgsql
+security definer   -- must see every line regardless of the poster's RLS
 set search_path = ''
 as $$
 declare

@@ -13,11 +13,27 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 | Phase | Scope | Status |
 |---|---|---|
 | **0 — Foundation** | Auth, roles & permissions, RLS, audit trail, document numbering, settings, barcode/label service, accounting core (ledger + posting rules) | **Done** |
-| 1A — Core bottle & delivery loop | Customers, products, inventory, bottles, external bottles, orders, deliveries, driver app | Next |
-| 1B — Water shops & POS | Shops, shop POS, settlements, thermal receipts | |
+| **1A — Core bottle & delivery loop** | Customers, products & prices, VAT, inventory, bottles, external bottles, deposits, orders, recurring orders, dispatch, driver app (offline), check-in reconciliation, receipts, dashboard | **Done** |
+| 1B — Water shops & POS | Shops, shop POS, settlements, head-office POS | Next |
 | 2 — Operations & finance | Production, QC, procurement, accounting UI, HR, fleet | |
 | 3 — Commercial & control | Distributors, CRM, complaints, notifications, documents, approvals | |
 | 4 — Intelligence | AI assistant, analytics, forecasting | |
+
+### What Phase 1A adds
+
+- **Dashboard** — today's sales, cash collected, deliveries, orders waiting, money owed, where bottles are, external bottles held, alerts.
+- **Customers** — all ten customer types, addresses with GPS, credit limits (Finance only), payment terms, bottle model (deposit or loan with a limit), policy for other companies' bottles, balances, invoices, payments, bottle history.
+- **Products & Prices** — products, effective-dated price lists (tax-inclusive or not), VAT rates by date, bottle deposit / replacement values, customer-type defaults.
+- **Orders** — phone/staff orders with live pricing; credit-limit, overdue and bottle-limit checks put orders **on hold** for Finance to release; edits are audited before/after.
+- **Recurring orders** — daily, alternate days, weekly on chosen days, every N days, monthly; pause, resume, skip, cancel; generating twice never duplicates.
+- **Dispatch** — plan a run from confirmed orders, warehouse load-out with suggested quantities and cash float, driver confirms the load on the phone.
+- **Driver app** (`/driver`, phone browser, works offline) — stops in order, call/navigate, deliver with steppers, camera barcode scanning (Android and iPhone) or Bluetooth scanner, OLA and external bottle collection, tag-at-the-door for external bottles, live total incl. deposits, cash/card/QR/bank/cheque/on-account, change, signature or photo, GPS, 80 mm receipt. Offline transactions queue on the phone and sync exactly once.
+- **Check-in** — expected vs counted for products, OLA empties, every external company's bottles and cash; every difference becomes an **exception** (found / charge driver / write off), and the run closes when all are resolved.
+- **Bottles** — where every OLA bottle is, value outside the warehouse, register labels, opening balances, look up any label with its full history, mark damaged / retire.
+- **External bottles** — per-company accounts (collected, returned, held, value, alert), hand-overs with the receiver's name, OLA bottles received back.
+- **Inventory** — stock by location (warehouse, each vehicle), receive, transfer, stock count with approval limit.
+- **Payments** — office and driver collections, allocation to oldest invoices, receipts and reprints (audited).
+- **Accounting** — every invoice, payment, deposit, float, hand-in, shortage, write-off and stock change posts a balanced journal automatically.
 
 ### What Phase 0 gives you
 
@@ -81,7 +97,7 @@ Import the repository in Vercel and add the same three environment variables. `S
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + 69 database tests on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0, Phase 1A scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build

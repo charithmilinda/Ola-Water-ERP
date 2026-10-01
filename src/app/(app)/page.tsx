@@ -1,123 +1,133 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { redirect } from "next/navigation";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import { getAccess, can } from "@/lib/access";
-import { visibleNav } from "@/lib/nav";
-import { NAV_ICONS } from "@/lib/nav-icons";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardBody, CardHeader, Stat } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { formatLKR, formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
-import { todayISO } from "@/lib/format";
+import { Card, CardBody, CardHeader, Stat } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Welcome } from "./welcome";
 
-export default async function HomePage() {
+type Dash = {
+  today: string;
+  sales_today: number;
+  invoices_today: number;
+  collected_today: number;
+  orders_today: number;
+  orders_on_hold: number;
+  orders_to_dispatch: number;
+  deliveries: { total: number; completed: number; failed: number; pending: number };
+  runs_out: number;
+  customer_outstanding: number;
+  overdue: number;
+  bottles: { warehouse_full: number; warehouse_empty: number; on_vehicles: number; with_customers: number; external_held: number; external_on_vehicles: number };
+  exceptions: { critical: number; warning: number; info: number };
+  external_alerts: { company: string; held: number; limit: number }[];
+  sales_14d: { date: string; sales: number; deliveries: number }[];
+};
+
+const n = (v: number) => Number(v).toLocaleString("en-LK");
+
+export default async function DashboardPage() {
   const access = await getAccess();
+  if (!can(access, "dashboard.view")) {
+    // drivers go straight to their app
+    if (access.permissions.includes("driver.app") && access.permissions.length <= 2) redirect("/driver");
+    return <Welcome />;
+  }
+
   const supabase = await createClient();
-  const startOfDay = new Date(`${todayISO()}T00:00:00+05:30`).toISOString();
+  const { data, error } = await supabase.rpc("dashboard_summary");
+  if (error) return <Alert tone="error">{error.message}</Alert>;
+  const d = data as Dash;
+  const max = Math.max(1, ...d.sales_14d.map((x) => Number(x.sales)));
 
-  const stats: { label: string; value: number; hint: string }[] = [];
-
-  if (can(access, ["labels.print", "labels.view"])) {
-    const [unassigned, toPrint] = await Promise.all([
-      supabase.from("identifiers").select("id", { count: "exact", head: true }).eq("status", "unassigned"),
-      supabase.from("label_batches").select("id", { count: "exact", head: true }).eq("status", "generated"),
-    ]);
-    stats.push(
-      { label: "Labels ready to apply", value: unassigned.count ?? 0, hint: "Generated, not yet linked to a bottle" },
-      { label: "Label batches to print", value: toPrint.count ?? 0, hint: "Generated but never printed" },
-    );
-  }
-  if (can(access, "audit.view")) {
-    const [events, failed] = await Promise.all([
-      supabase.from("audit_logs").select("id", { count: "exact", head: true }).gte("occurred_at", startOfDay),
-      supabase.from("audit_logs").select("id", { count: "exact", head: true }).eq("action", "failed_login").gte("occurred_at", startOfDay),
-    ]);
-    stats.push(
-      { label: "Audit events today", value: events.count ?? 0, hint: "Every change recorded since midnight" },
-      { label: "Failed sign-ins today", value: failed.count ?? 0, hint: "Wrong password or unknown email" },
-    );
-  }
-  if (can(access, "users.manage")) {
-    const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("is_active", true);
-    stats.push({ label: "Active users", value: count ?? 0, hint: "Staff who can sign in" });
-  }
-
-  const modules = visibleNav(access.is_super_admin, access.permissions)
-    .flatMap((g) => g.items)
-    .filter((i) => i.href !== "/");
-
-  const firstName = access.full_name.split(" ")[0];
+  const alerts: { tone: "error" | "warning"; text: string; href: string }[] = [];
+  if (d.exceptions.critical > 0) alerts.push({ tone: "error", text: `${d.exceptions.critical} critical exception(s) — missing bottles, stock or cash`, href: "/exceptions" });
+  if (d.orders_on_hold > 0) alerts.push({ tone: "warning", text: `${d.orders_on_hold} order(s) on hold for credit or bottle limits`, href: "/orders?status=on_hold" });
+  if (d.deliveries.failed > 0) alerts.push({ tone: "warning", text: `${d.deliveries.failed} failed delivery(ies) today`, href: "/dispatch" });
+  d.external_alerts.forEach((a) =>
+    alerts.push({ tone: "warning", text: `${a.company}: ${a.held} bottles held (alert at ${a.limit}) — arrange a hand-over`, href: "/bottles/external" }),
+  );
+  if (d.bottles.warehouse_empty < 0 || d.bottles.warehouse_full < 0)
+    alerts.push({ tone: "warning", text: "Warehouse bottle count is negative — enter opening bottle balances", href: "/bottles" });
 
   return (
     <>
-      <PageHeader title={`Welcome, ${firstName}`} description="Your workspace in the OLA Water ERP." />
+      <PageHeader title="Dashboard" description={`Today, ${formatDate(d.today)}`} />
 
-      {stats.length > 0 && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          {stats.map((s) => (
-            <Stat key={s.label} label={s.label} value={s.value.toLocaleString("en-LK")} hint={s.hint} />
+      {alerts.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {alerts.map((a, i) => (
+            <Link key={i} href={a.href} className="block">
+              <Alert tone={a.tone}>
+                <span className="flex items-center gap-2">
+                  {a.text} <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </Alert>
+            </Link>
           ))}
         </div>
       )}
 
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Sales today" value={formatLKR(d.sales_today)} hint={`${d.invoices_today} invoice(s), incl. VAT, excl. deposits`} />
+        <Stat label="Collected today" value={formatLKR(d.collected_today)} hint="All payment methods" />
+        <Stat label="Deliveries today" value={`${n(d.deliveries.completed)} / ${n(d.deliveries.total)}`} hint={`${d.deliveries.pending} pending · ${d.deliveries.failed} failed · ${d.runs_out} vehicle(s) out`} />
+        <Stat label="Orders to dispatch" value={n(d.orders_to_dispatch)} hint={`${d.orders_today} new today · ${d.orders_on_hold} on hold`} />
+        <Stat label="Customers owe" value={formatLKR(d.customer_outstanding)} hint={`${formatLKR(d.overdue)} overdue`} />
+        <Stat label="Warehouse bottles" value={`${n(d.bottles.warehouse_full)} full`} hint={`${n(d.bottles.warehouse_empty)} empty · ${n(d.bottles.on_vehicles)} on vehicles`} />
+        <Stat label="OLA bottles with customers" value={n(d.bottles.with_customers)} hint="Loaned or under deposit" />
+        <Stat label="External bottles held" value={n(d.bottles.external_held)} hint={`${n(d.bottles.external_on_vehicles)} more on vehicles`} />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Your modules" description="What your role gives you access to." />
-          {modules.length === 0 ? (
-            <CardBody>
-              <p className="text-sm text-muted">
-                Your account has no modules assigned yet. Ask an administrator to give you a role.
-              </p>
-            </CardBody>
-          ) : (
-            <ul className="divide-y divide-line">
-              {modules.map((m) => {
-                const Icon = NAV_ICONS[m.icon];
-                return (
-                  <li key={m.href}>
-                    <Link href={m.href} className="flex items-center gap-4 px-5 py-4 hover:bg-ola-50/60">
-                      <span className="rounded-lg bg-ola-50 p-2 text-ola-700">
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </span>
-                      <span className="flex-1 text-sm font-medium text-navy-900">{m.label}</span>
-                      <ArrowRight className="h-4 w-4 text-muted" aria-hidden />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <CardHeader title="Sales — last 14 days" description="Invoiced value incl. VAT" />
+          <CardBody>
+            <div className="flex h-48 items-end gap-1.5" role="img" aria-label="Daily sales for the last 14 days">
+              {d.sales_14d.map((x) => (
+                <div key={x.date} className="group flex flex-1 flex-col items-center gap-1">
+                  <div className="relative flex w-full flex-1 items-end">
+                    <div
+                      className="w-full rounded-t bg-ola-500 transition-colors group-hover:bg-ola-700"
+                      style={{ height: `${(Number(x.sales) / max) * 100}%`, minHeight: Number(x.sales) > 0 ? 3 : 0 }}
+                      title={`${formatDate(x.date)}: ${formatLKR(x.sales)} · ${x.deliveries} deliveries`}
+                    />
+                  </div>
+                  <span className="text-[10px] text-muted">{x.date.slice(8)}</span>
+                </div>
+              ))}
+            </div>
+          </CardBody>
         </Card>
-
         <Card>
-          <CardHeader title="Your access" />
-          <CardBody className="space-y-4 text-sm">
-            <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Roles</p>
-              <div className="flex flex-wrap gap-1.5">
-                {access.roles.length === 0 && <span className="text-muted">None</span>}
-                {access.roles.map((r) => (
-                  <Badge key={`${r.code}-${r.location_code}`} tone={r.code === "super_admin" ? "navy" : "blue"}>
-                    {r.name}
-                    {r.location_code && ` · ${r.location_code}`}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Permissions</p>
-              <p className="num text-navy-900">{access.permissions.length} granted</p>
-            </div>
-            {access.default_location && (
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Default location</p>
-                <p className="text-navy-900">
-                  {access.default_location.name} ({access.default_location.code})
-                </p>
-              </div>
+          <CardHeader title="Open exceptions" />
+          <CardBody className="space-y-3 text-sm">
+            <Row label="Critical" value={d.exceptions.critical} tone="text-red-700" />
+            <Row label="Warnings" value={d.exceptions.warning} tone="text-amber-700" />
+            <Row label="For information" value={d.exceptions.info} tone="text-ola-700" />
+            <Link href="/exceptions" className="inline-flex items-center gap-1 pt-2 font-medium text-ola-700 hover:underline">
+              Review exceptions <ArrowRight className="h-4 w-4" />
+            </Link>
+            {d.exceptions.critical + d.exceptions.warning === 0 && (
+              <p className="flex items-center gap-2 text-muted">
+                <AlertTriangle className="h-4 w-4" /> Nothing needs attention.
+              </p>
             )}
           </CardBody>
         </Card>
       </div>
     </>
+  );
+}
+
+function Row({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted">{label}</span>
+      <span className={`num text-lg font-semibold ${value > 0 ? tone : "text-navy-900"}`}>{value}</span>
+    </div>
   );
 }

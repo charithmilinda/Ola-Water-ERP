@@ -17,11 +17,40 @@ export type NavGroup = { label: string; items: NavItem[] };
 export const NAV: NavGroup[] = [
   {
     label: "Overview",
-    items: [{ href: "/", label: "Home", icon: "LayoutDashboard", permissions: [] }],
+    items: [{ href: "/", label: "Dashboard", icon: "LayoutDashboard", permissions: [] }],
+  },
+  {
+    label: "Sales",
+    items: [
+      { href: "/customers", label: "Customers", icon: "Contact", permissions: ["customers.view"] },
+      { href: "/orders", label: "Orders", icon: "ClipboardList", permissions: ["orders.view"] },
+      { href: "/recurring", label: "Recurring Orders", icon: "Repeat", permissions: ["orders.view"] },
+      { href: "/payments", label: "Payments", icon: "Wallet", permissions: ["payments.view"] },
+    ],
+  },
+  {
+    label: "Delivery",
+    items: [
+      { href: "/dispatch", label: "Dispatch & Runs", icon: "Truck", permissions: ["deliveries.view", "deliveries.manage"] },
+      { href: "/exceptions", label: "Exceptions", icon: "TriangleAlert", permissions: ["deliveries.reconcile", "bottles.view"] },
+      { href: "/routes", label: "Routes & Vehicles", icon: "Route", permissions: ["routes.manage", "fleet.manage"] },
+      { href: "/driver", label: "Driver App", icon: "Truck", permissions: ["driver.app"] },
+    ],
   },
   {
     label: "Bottles",
-    items: [{ href: "/labels", label: "Label Printing", icon: "QrCode", permissions: ["labels.print", "labels.view"] }],
+    items: [
+      { href: "/bottles", label: "Bottles", icon: "Droplets", permissions: ["bottles.view"] },
+      { href: "/bottles/external", label: "External Bottles", icon: "ArrowLeftRight", permissions: ["bottles.view"] },
+      { href: "/labels", label: "Label Printing", icon: "QrCode", permissions: ["labels.print", "labels.view"] },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { href: "/inventory", label: "Inventory", icon: "Boxes", permissions: ["inventory.view"] },
+      { href: "/products", label: "Products & Prices", icon: "Package", permissions: ["products.view"] },
+    ],
   },
   {
     label: "Admin",

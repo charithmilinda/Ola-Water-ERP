@@ -23,10 +23,12 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
   echo "migrate  $(basename "$f")"
   "${PSQL[@]}" -d ola_test -f "$f" >/dev/null
 done
-if [ -f "$ROOT/supabase/seed.sql" ]; then
-  echo "seed     seed.sql"
-  "${PSQL[@]}" -d ola_test -f "$ROOT/supabase/seed.sql" >/dev/null
-fi
+# demo data is checked in its own database so the scenario tests start clean
+"${PSQL[@]}" -d postgres -c "create database ola_seed" >/dev/null
+"${PSQL[@]}" -d ola_seed -f "$ROOT/supabase/tests/00_supabase_stub.sql" >/dev/null
+for f in "$ROOT"/supabase/migrations/*.sql; do "${PSQL[@]}" -d ola_seed -f "$f" >/dev/null; done
+echo "seed     seed.sql (demo data, separate database)"
+"${PSQL[@]}" -d ola_seed -f "$ROOT/supabase/seed.sql" >/dev/null
 for t in "$ROOT"/supabase/tests/*.test.sql; do
   echo "test     $(basename "$t")"
   "${PSQL[@]}" -d ola_test -f "$t" 2>&1 >/dev/null | sed -e 's/^psql:[^ ]* NOTICE:  /  /'

@@ -2,9 +2,11 @@
 -- Used ONLY by scripts/db-test.sh to run migrations and tests on plain
 -- PostgreSQL. Never run this against a real Supabase project.
 
-create role anon nologin noinherit;
-create role authenticated nologin noinherit;
-create role service_role nologin noinherit bypassrls;
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin noinherit; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin noinherit; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin noinherit bypassrls; end if;
+end $$;
 
 create schema auth;
 create table auth.users (

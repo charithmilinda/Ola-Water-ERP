@@ -9,6 +9,11 @@ export type ClientNavGroup = { label: string; items: { href: string; label: stri
 
 export function SidebarNav({ groups, onNavigate }: { groups: ClientNavGroup[]; onNavigate?: () => void }) {
   const pathname = usePathname();
+  // The most specific matching link is the active one (e.g. /bottles/external over /bottles)
+  const all = groups.flatMap((g) => g.items.map((i) => i.href));
+  const activeHref = all
+    .filter((h) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`)))
+    .sort((a, b) => b.length - a.length)[0];
   return (
     <nav aria-label="Main" className="space-y-6">
       {groups.map((g) => (
@@ -16,7 +21,7 @@ export function SidebarNav({ groups, onNavigate }: { groups: ClientNavGroup[]; o
           <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted">{g.label}</p>
           <ul className="space-y-0.5">
             {g.items.map((item) => {
-              const active = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const active = item.href === activeHref;
               const Icon = NAV_ICONS[item.icon] ?? NAV_ICONS.Circle;
               return (
                 <li key={item.href}>

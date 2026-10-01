@@ -1,0 +1,10 @@
+{
+  "name": "OLA Water Driver",
+  "short_name": "OLA Driver",
+  "start_url": "/driver",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f8fc",
+  "theme_color": "#1868d6",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
