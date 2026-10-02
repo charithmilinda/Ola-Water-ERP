@@ -13,6 +13,8 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { LoadForm, CheckinForm } from "./run-forms";
+import { OrderPanel } from "@/components/map/order-panel";
+import { applyRunOrder } from "../../planning/actions";
 
 export const metadata: Metadata = { title: "Run" };
 
@@ -106,6 +108,8 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
         </Card>
       )}
 
+      <RunOrder runId={id} canApply={can(access, "deliveries.manage")} />
+
       {r.checked_in_at && (
         <Alert tone={r.status === "closed" ? "success" : "warning"} className="mb-6">
           Checked in {formatDateTime(r.checked_in_at)} · cash expected {formatLKR(r.cash_expected)}, handed in {formatLKR(r.cash_handed)}.
@@ -154,5 +158,31 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
         </Table>
       </Card>
     </>
+  );
+}
+
+type Sug = { start: { name: string; lat: number; lng: number; kind: string } | null; can_apply: boolean; current_km: number | null; suggested_km: number | null;
+  done: { delivery_id: string; customer: string; lat: number | null; lng: number | null; current_seq: number }[];
+  suggested: { delivery_id: string; customer: string; address: string | null; lat: number; lng: number; current_seq: number }[];
+  no_gps: { delivery_id: string; customer: string; address: string | null; current_seq: number }[] };
+
+async function RunOrder({ runId, canApply }: { runId: string; canApply: boolean }) {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("suggest_run_order", { p_run: runId });
+  const d = data as Sug | null;
+  if (!d || d.suggested.length + d.no_gps.length === 0) return null;
+  const toStop = (x: { delivery_id: string; customer: string; address?: string | null; lat?: number | null; lng?: number | null; current_seq: number }) =>
+    ({ id: x.delivery_id, name: x.customer, detail: x.address ?? null, lat: x.lat ?? null, lng: x.lng ?? null, current_seq: x.current_seq });
+  const current = [...d.suggested].sort((a, b) => a.current_seq - b.current_seq).map(toStop);
+  return (
+    <Card className="mb-6">
+      <CardHeader title="Stop order & map" description={d.start?.kind === "last_stop" ? "Remaining stops, from where the driver is now." : "Shortest order found from the GPS locations of the stops."} />
+      <CardBody>
+        {!d.start && <p className="mb-3 text-sm text-amber-800">Set the warehouse location under Planning → Route order to start the route from the warehouse.</p>}
+        <OrderPanel start={d.start} current={current} suggested={d.suggested.map(toStop)} noGps={d.no_gps.map(toStop)}
+          currentKm={d.current_km} suggestedKm={d.suggested_km} closeLoop={d.start?.kind === "warehouse"} canApply={canApply && d.can_apply}
+          action={applyRunOrder} hidden={{ run_id: runId }} applyLabel="Use the suggested order" />
+      </CardBody>
+    </Card>
   );
 }

@@ -1,4 +1,6 @@
 import {
+  LineChart,
+  CalendarClock,
   BarChart3,
   Briefcase,
   MapPinned,
@@ -93,6 +95,8 @@ export const NAV_ICONS = {
   Network,
   Target,
   BarChart3,
+  LineChart,
+  CalendarClock,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

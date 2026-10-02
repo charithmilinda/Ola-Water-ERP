@@ -44,10 +44,12 @@ export default async function DashboardPage() {
   }
 
   const supabase = await createClient();
-  const [{ data, error }, { data: opsData }, { data: accData }, { data: paData }, { data: ctlData }, { data: crmData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary"),
+  const [{ data, error }, { data: opsData }, { data: accData }, { data: paData }, { data: ctlData }, { data: crmData }, { data: refillData }] = await Promise.all([supabase.rpc("dashboard_summary"), supabase.rpc("operations_summary"),
     can(access, ["accounting.view", "payments.manage"]) ? supabase.rpc("accounting_overview") : Promise.resolve({ data: null }),
     supabase.rpc("people_assets_summary"), supabase.rpc("control_summary"),
-    can(access, ["crm.manage", "sales_reps.manage"]) ? supabase.rpc("crm_overview") : Promise.resolve({ data: null })]);
+    can(access, ["crm.manage", "sales_reps.manage"]) ? supabase.rpc("crm_overview") : Promise.resolve({ data: null }),
+    can(access, ["orders.manage", "crm.manage"]) ? supabase.rpc("refill_due", { p_days: 0, p_route: null }) : Promise.resolve({ data: null })]);
+  const refillDue = Array.isArray(refillData) ? refillData.length : 0;
   const crm = crmData as { my_follow_ups: number } | null;
   const ctl = (ctlData ?? {}) as { approvals_waiting?: number; complaints?: { open: number; overdue: number; unassigned: number; mine: number } | null;
     qc_reviews?: number | null; documents_expiring?: number; documents_expired?: number; messages?: { queued: number; failed: number; enabled: boolean } | null };
@@ -78,6 +80,7 @@ export default async function DashboardPage() {
   if (acc?.journals_waiting) alerts.push({ tone: "warning", text: `${acc.journals_waiting} manual journal(s) waiting for approval`, href: "/accounting/journals" });
   if (acc?.expenses_waiting) alerts.push({ tone: "warning", text: `${acc.expenses_waiting} expense(s) waiting for approval`, href: "/expenses" });
   if (acc?.cheques_in_hand?.count) alerts.push({ tone: "warning", text: `${acc.cheques_in_hand.count} cheque(s) in hand (${formatLKR(acc.cheques_in_hand.amount)}) — bank them`, href: "/accounting/banking" });
+  if (refillDue) alerts.push({ tone: "warning", text: `${refillDue} customer(s) due for a refill with nothing ordered — call them`, href: "/planning?tab=refill&days=0" });
   if (crm?.my_follow_ups) alerts.push({ tone: "warning", text: `${crm.my_follow_ups} lead follow-up(s) due for you`, href: "/crm?show=due" });
   if (ctl.approvals_waiting) alerts.push({ tone: "warning", text: `${ctl.approvals_waiting} item(s) waiting for your approval`, href: "/approvals" });
   if (ctl.complaints?.overdue) alerts.push({ tone: "error", text: `${ctl.complaints.overdue} complaint(s) past their due time`, href: "/complaints?show=overdue" });

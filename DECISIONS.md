@@ -2,6 +2,21 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 4 — Analytics, planning and route ordering (October 2026)
+
+**D-4-01 · No AI assistant and no paid map service (owner's decision).** The AI management assistant (master prompt D-8) is not built; the reports centre and analytics answer the same questions. Routes are ordered from the GPS points already stored — no Google Maps or other routing service and no API keys. The map uses free OpenStreetMap tiles (with the required attribution); if the office ever has very heavy map use, a paid tile provider can be swapped in.
+
+**D-4-02 · Route ordering** = nearest stop first from the start, then improved by swapping legs until no shorter order is found ("2-opt"). Distances are straight-line between GPS points × `planning.road_factor` (1.3) to estimate road km — good for ordering stops, not exact driving distance (no one-way streets or traffic). A run starts at the warehouse (and returns) or, once on the road, from the last completed stop. Stops without GPS are kept at the end. Re-ordering a run changes only pending stops; a route's order sets each customer's route sequence, which new runs use. The warehouse location is set on the Planning page.
+
+**D-4-03 · Demand forecast** per product: the last 12 weeks of units sold, the last 4 weeks counting double, never less than what active recurring orders need each week. Suggested production = forecast for the chosen weeks + safety stock (`planning.safety_stock_days`, 2 days) − available stock − stock on QC hold. Materials to buy = (suggested production × bill of materials) + reorder level − in stock − on open purchase orders. This is a planning aid; production and purchasing still decide.
+
+**D-4-04 · Customers due for a refill**: at least 3 orders in the last 6 months, the median gap between their orders, next order due within `planning.refill_window_days` (2), nothing on order, not on a recurring order, not more than 30 days overdue (those are in "Customers who stopped buying"). The dashboard shows how many are due today.
+
+**D-4-05 · Analytics** charts (Recharts) show 6, 12 or 24 months: sales against a year earlier, collections and expenses, 19L units and customers served, delivery success, complaints, and sales by customer type, product, route and top customers.
+
+### Not verified in this phase
+- Ordering, forecast, materials, refill and analytics were tested against PostgreSQL 16 (stops along a road put in order, km saved, the new order applied, a weekly customer flagged as due). Screens were type-checked and production-built but not clicked through against the live project. Map tiles need internet on the viewing device.
+
 ## Phase 3C — Reports (October 2026)
 
 **D-3C-01 · One reports centre.** 39 operational reports (sales, customers, stock, bottles, delivery, production & QC, finance, complaints) come from one database function, `run_report`, so the screen, the print-out and the Excel download always show the same figures. They are calculated from the live records each time (no overnight copies). The accounting reports from Phase 2B, fleet profitability, commissions, EPF/ETF and the asset register are linked from the same page.

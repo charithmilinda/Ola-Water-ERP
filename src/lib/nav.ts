@@ -23,6 +23,8 @@ export const NAV: NavGroup[] = [
       { href: "/", label: "Dashboard", icon: "LayoutDashboard", permissions: [] },
       { href: "/reports", label: "Reports", icon: "BarChart3", permissions: ["reports.view", "accounting.view", "sales_reps.manage", "customers.view", "inventory.view",
         "bottles.view", "deliveries.view", "deliveries.manage", "production.view", "qc.view", "complaints.view", "complaints.manage"] },
+      { href: "/analytics", label: "Analytics", icon: "LineChart", permissions: ["reports.view", "accounting.view"] },
+      { href: "/planning", label: "Planning", icon: "CalendarClock", permissions: ["production.view", "inventory.view", "reports.view", "orders.manage", "crm.manage", "routes.manage", "deliveries.manage"] },
     ],
   },
   {
