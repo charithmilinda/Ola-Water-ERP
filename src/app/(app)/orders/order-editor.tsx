@@ -124,6 +124,10 @@ export function OrderEditor({ initial, today }: { initial: OrderInitial; today: 
       {pricing && (
         <>
           {pricing.customer.status === "on_hold" && <Alert tone="warning">This customer is on hold — the order will need approval.</Alert>}
+          {pricing.promotions?.length > 0 && (
+            <Alert tone="info">Promotions for this customer (applied automatically when the order is saved):{" "}
+              {pricing.promotions.map((pr) => `${pr.name}${pr.product_id ? ` on ${pricing.products.find((x) => x.id === pr.product_id)?.name ?? "a product"}` : ""}${Number(pr.min_qty) > 0 ? ` (from ${Number(pr.min_qty)})` : ""}`).join("; ")}.</Alert>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Deliver on" htmlFor="o-date" required>
               <Input id="o-date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} required />

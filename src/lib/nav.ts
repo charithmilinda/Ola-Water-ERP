@@ -39,6 +39,16 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Sales Team & CRM",
+    items: [
+      { href: "/sales/my", label: "My Day", icon: "MapPinned", permissions: ["payments.collect"] },
+      { href: "/crm", label: "Leads & CRM", icon: "Target", permissions: ["crm.manage", "sales_reps.manage"] },
+      { href: "/sales", label: "Sales Team", icon: "Briefcase", permissions: ["sales_reps.manage"] },
+      { href: "/sales/commissions", label: "Commissions", icon: "Percent", permissions: ["sales_reps.manage", "payroll.approve", "expenses.approve"] },
+      { href: "/distributors", label: "Distributors", icon: "Network", permissions: ["distributors.manage"] },
+    ],
+  },
+  {
     label: "Delivery",
     items: [
       { href: "/dispatch", label: "Dispatch & Runs", icon: "Truck", permissions: ["deliveries.view", "deliveries.manage"] },

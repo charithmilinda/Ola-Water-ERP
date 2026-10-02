@@ -2,6 +2,28 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 3B — Sales team, distributors, CRM (October 2026)
+
+**D-3B-01 · Sales reps** are staff logins (optionally linked to an employee) with a code, territory and commission plan. Customers are owned by a rep (Sales Team → assign customers). Monthly targets: sales (before VAT), collections, new customers and visits; actuals come from the rep's own customers' invoices and payments.
+
+**D-3B-02 · Visits** are checked in / out from the phone with GPS. A check-in further than `sales.visit_radius_m` (300 m) from the customer's saved location is accepted but flagged. One open visit at a time.
+
+**D-3B-03 · Collections by reps.** Cash collected by a rep posts Dr Cash with Sales Reps (1150) / Cr Receivable and stays "with the rep" until handed in (to a cash or bank account, in part or in full); cheques need the cheque number. Reps holding cash for more than a day raise an alert.
+
+**D-3B-04 · Commissions** = sales × sales rate + collections × collection rate + (target met: sales × bonus rate) + new customers × bonus (plans editable; the seeded plan is an example). Statements are prepared for a month that has ended, can be adjusted with a reason, and are approved by someone with commission rights other than the rep (Dr Sales Commissions 6215 / Cr Commissions Payable 2520). Reps who are employees are paid on their next payroll (the payslip clears the payable); others are paid directly.
+
+**D-3B-05 · Distributors / dealers** sit on top of a customer account — price list, credit limit, orders, invoices, payments and bottles stay on the customer, so nothing is duplicated. The profile adds territory, agreement dates (alert 30 days before it ends), monthly target, agreed minimum stock and the stock they report holding.
+
+**D-3B-06 · CRM.** Leads (new → contacted → prospect → offer → customer / lost, lost needs a reason) with follow-ups and activities, opportunities with stage and probability, and conversion: "win" creates the customer (credit terms through approval as usual) and keeps the link so conversion and first sale can be reported. Existing customers' phone numbers are not accepted as leads.
+
+**D-3B-07 · Segments** are saved filters (customer type, route, rep, bottle model, city, days since last order, overdue, created after, monthly sales). **Campaigns** record channel, budget and dates, and can send an SMS / WhatsApp to a segment through the Phase 3A outbox (once per customer per campaign, capped by `crm.max_campaign_messages`; opted-out customers are skipped).
+
+**D-3B-08 · Promotions** (% off, Rs. off per unit, special price, buy X get Y) for chosen products, customer types, segment or price list, with dates and a minimum quantity. Switching one on is a price change and goes through the Approvals rule "Promotion switched on" (price approver). The best active promotion is applied automatically to delivery orders on top of any manual discount and needs no further discount approval. Promotions are not applied at the shop / head-office POS.
+
+### Not verified in this phase
+- All flows were tested against PostgreSQL 16 (targets, GPS distance, collections and hand-in, commission → payroll → ledger, distributors, lead to customer conversion, segments, promotions with approval on orders, campaign messages, ledger balanced). Screens were type-checked and production-built but not clicked through against the live project. GPS accuracy depends on the phone.
+- **Agree the commission plan figures with management** before the first month is prepared.
+
 ## Phase 3A — Approvals, notifications, complaints, documents (October 2026)
 
 **D-3A-01 · Phase 3 split.** 3A (control: approvals inbox and rules, notifications and customer messages, complaints, documents), 3B (distributors, sales representatives, CRM), 3C (advanced reports).

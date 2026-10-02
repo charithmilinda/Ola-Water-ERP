@@ -226,3 +226,42 @@ export const MESSAGE_STATUS: Record<string, { label: string; tone: BadgeTone }> 
 
 export const DOC_ENTITY_TYPES = [["company", "Company"], ["customer", "Customer"], ["supplier", "Supplier"], ["employee", "Employee"],
   ["vehicle", "Vehicle"], ["asset", "Fixed asset"], ["batch", "Production batch"], ["shop", "Water shop"]] as const;
+
+export const LEAD_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  new: { label: "New", tone: "blue" },
+  contacted: { label: "Contacted", tone: "amber" },
+  qualified: { label: "Prospect", tone: "amber" },
+  proposal: { label: "Offer made", tone: "amber" },
+  won: { label: "Customer", tone: "green" },
+  lost: { label: "Lost", tone: "neutral" },
+};
+export const LEAD_SOURCES = [["phone", "Phone call"], ["walk_in", "Walk-in"], ["referral", "Referral"], ["website", "Website"], ["facebook", "Facebook"],
+  ["instagram", "Instagram"], ["whatsapp", "WhatsApp"], ["campaign", "Campaign"], ["field_visit", "Field visit"], ["event", "Event"], ["other", "Other"]] as const;
+export const OPP_STAGE: Record<string, { label: string; tone: BadgeTone }> = {
+  prospecting: { label: "Prospecting", tone: "blue" },
+  proposal: { label: "Offer made", tone: "amber" },
+  negotiation: { label: "Negotiating", tone: "amber" },
+  won: { label: "Won", tone: "green" },
+  lost: { label: "Lost", tone: "neutral" },
+};
+export const ACTIVITY_KINDS = [["call", "Call"], ["visit", "Visit"], ["whatsapp", "WhatsApp"], ["sms", "SMS"], ["email", "Email"], ["meeting", "Meeting"],
+  ["note", "Note"], ["task", "Task"]] as const;
+export const VISIT_PURPOSES = [["sales_call", "Sales call"], ["collection", "Collect payment"], ["new_customer", "New customer"], ["follow_up", "Follow-up"],
+  ["complaint", "Complaint"], ["merchandising", "Merchandising"], ["other", "Other"]] as const;
+export const VISIT_OUTCOMES = [["order", "Took an order"], ["payment", "Collected payment"], ["interested", "Interested"], ["not_interested", "Not interested"],
+  ["no_one_there", "Nobody there"], ["follow_up", "Visit again"], ["other", "Other"]] as const;
+export const CAMPAIGN_CHANNELS = [["sms", "SMS"], ["whatsapp", "WhatsApp"], ["facebook", "Facebook"], ["instagram", "Instagram"], ["flyers", "Flyers"],
+  ["radio", "Radio"], ["event", "Event"], ["field", "Field team"], ["referral", "Referral scheme"], ["other", "Other"]] as const;
+export const CAMPAIGN_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  planned: { label: "Planned", tone: "neutral" }, active: { label: "Running", tone: "green" },
+  completed: { label: "Completed", tone: "blue" }, cancelled: { label: "Cancelled", tone: "neutral" },
+};
+export const PROMO_KINDS = [["percent", "% off"], ["amount_per_unit", "Rs. off each unit"], ["fixed_price", "Special unit price"], ["buy_x_get_y", "Buy X get Y free"]] as const;
+export const PROMO_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  draft: { label: "Draft", tone: "neutral" }, active: { label: "Active", tone: "green" }, ended: { label: "Ended", tone: "neutral" },
+};
+export const COMMISSION_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
+  draft: { label: "Draft", tone: "amber" }, approved: { label: "Approved — to pay", tone: "blue" },
+  paid: { label: "Paid", tone: "green" }, cancelled: { label: "Cancelled", tone: "neutral" },
+};
+export const DISTRIBUTOR_KINDS = [["distributor", "Distributor"], ["dealer", "Dealer"], ["wholesaler", "Wholesaler"]] as const;

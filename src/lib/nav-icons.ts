@@ -1,4 +1,9 @@
 import {
+  Briefcase,
+  MapPinned,
+  Percent,
+  Network,
+  Target,
   ClipboardCheck,
   MessageSquareWarning,
   FileText,
@@ -81,6 +86,11 @@ export const NAV_ICONS = {
   MessageSquareWarning,
   FileText,
   MessageCircle,
+  Briefcase,
+  MapPinned,
+  Percent,
+  Network,
+  Target,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

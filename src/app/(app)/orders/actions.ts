@@ -14,6 +14,7 @@ export type Pricing = {
   ola_bottles: number;
   outstanding: number;
   includes_tax: boolean;
+  promotions: { id: string; name: string; kind: string; value: number; buy_qty: number | null; product_id: string | null; min_qty: number; end_date: string }[];
 };
 
 export async function searchCustomers(q: string): Promise<CustomerHit[]> {
@@ -34,6 +35,7 @@ export async function customerPricing(customerId: string): Promise<Pricing | nul
     supabase.from("price_lists").select("prices_include_tax").eq("id", c.price_list_id).single(),
     supabase.rpc("customer_summary", { p_customer: customerId }),
   ]);
+  const { data: promos } = await supabase.rpc("active_promotions_for", { p_customer: customerId });
   const price = (pid: string) => items?.find((i) => i.product_id === pid)?.unit_price ?? null;
   return {
     customer: c,
@@ -42,6 +44,7 @@ export async function customerPricing(customerId: string): Promise<Pricing | nul
     ola_bottles: summary?.ola_bottles ?? 0,
     outstanding: summary?.outstanding ?? 0,
     includes_tax: list?.prices_include_tax ?? true,
+    promotions: (promos ?? []) as Pricing["promotions"],
   };
 }
 

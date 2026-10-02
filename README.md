@@ -19,9 +19,17 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 | **2B — Finance** | Accounting reports (P&L, balance sheet, cash flow, trial balance, ledger, ageing, VAT), manual journals with approval, periods, cash & bank accounts, cheques, payment reversals, credit notes, transfers, card settlements, bank reconciliation, expenses, VAT returns | **Done** |
 | **2C — People & assets** | HR (employees, attendance, leave, advances), payroll with EPF/ETF/APIT and payslips, fleet (documents, fuel logs, services, driver road expenses, vehicle profitability), fixed assets & depreciation | **Done** |
 | **3A — Control** | Approvals inbox and configurable rules (stock, discounts, credit, prices, bottle write-offs, plus all module approvals), notification bell, customer SMS / WhatsApp and staff email with outbox, complaints with SLA and QC review, document library with expiry alerts | **Done** |
-| 3B — Commercial | Distributors / dealers, sales representatives (visits, targets, commission), CRM (leads, campaigns, promotions) | Next |
-| 3C — Reports | Advanced reports and exports across all modules | |
+| **3B — Commercial** | Sales reps (My Day with GPS visits and collections, targets, commission paid through payroll), distributors / dealers, CRM (leads, follow-ups, opportunities, segments, campaigns, promotions) | **Done** |
+| 3C — Reports | Advanced reports and exports across all modules | Next |
 | 4 — Intelligence | AI assistant, analytics, forecasting | |
+
+### What Phase 3B adds
+
+- **My Day (sales reps, on the phone)** — targets vs actual, check in / out of visits with GPS, collect cash or cheques, cash with me, today's follow-ups, my customers and leads.
+- **Sales Team** — territories, reps, monthly targets, customer ownership, rep performance, cash held and hand-in.
+- **Commissions** — plans, monthly statements, adjustments, approval, payment through payroll or directly.
+- **Distributors / dealers** — profile on their customer account, territory, agreement, targets, reported stock, performance.
+- **Leads & CRM** — leads, follow-ups, activities, opportunities, convert to customer; segments, promotions (applied automatically to orders after approval) and campaigns with SMS to a segment and results.
 
 ### What Phase 3A adds
 
@@ -165,7 +173,7 @@ Optional, for messages (Phase 3A) — add only the ones you use:
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + database tests (Phase 0, 1A, 1B, 2A, 2B, 2C and 3A scenarios) on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0 – 3B scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build

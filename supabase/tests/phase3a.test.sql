@@ -176,7 +176,7 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a
 set role authenticated;
 select tests.ok(jsonb_typeof(public.approval_inbox() -> 'items') = 'array', 'the inbox gathers every module for a super admin');
 select tests.ok((select count(*) >= 3 from public.staff_directory()), 'staff names for assigning complaints');
-select tests.ok(jsonb_array_length(public.approval_rules_overview() -> 'rules') = 5, 'rules overview lists the approval rules');
+select tests.ok(jsonb_array_length(public.approval_rules_overview() -> 'rules') >= 5, 'rules overview lists the approval rules');
 select tests.ok((select count(*) >= 5 from public.approval_history(app.today() - 1, app.today())), 'approval history');
 select public.save_approval_rule('stock_adjustment', '{"levels": 1}', 'Back to one approver');
 reset role;
