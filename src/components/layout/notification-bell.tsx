@@ -34,10 +34,10 @@ export function NotificationBell({ unread, items }: { unread: number; items: Not
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}
-        className="relative rounded-lg p-2 text-navy-800 hover:bg-ola-50">
+        className="relative flex h-11 w-11 items-center justify-center rounded-lg text-navy-800 hover:bg-ola-50">
         <Bell className="h-5 w-5" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-semibold text-white">
+          <span className="absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-semibold text-white">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
@@ -45,7 +45,7 @@ export function NotificationBell({ unread, items }: { unread: number; items: Not
       {open && (
         <>
           <button type="button" aria-label="Close notifications" className="fixed inset-0 z-30 cursor-default" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-40 mt-2 w-[min(24rem,calc(100vw-2rem))] rounded-xl border border-line bg-white shadow-lg">
+          <div className="fixed inset-x-2 top-14 z-40 rounded-xl border border-line bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <p className="text-sm font-semibold text-navy-900">Notifications</p>
               {unread > 0 && (
@@ -55,7 +55,7 @@ export function NotificationBell({ unread, items }: { unread: number; items: Not
                 </button>
               )}
             </div>
-            <ul className="max-h-[60dvh] divide-y divide-line overflow-y-auto">
+            <ul className="max-h-[65dvh] divide-y divide-line overflow-y-auto">
               {items.length === 0 && <li className="px-4 py-6 text-center text-sm text-muted">Nothing new.</li>}
               {items.map((n) => (
                 <li key={n.id}>

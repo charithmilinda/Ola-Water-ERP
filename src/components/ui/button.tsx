@@ -13,10 +13,10 @@ export const buttonVariants = cva(
         dangerOutline: "border border-red-200 bg-white text-red-700 hover:bg-red-50",
       },
       size: {
-        sm: "h-8 px-3 text-sm",
-        md: "h-10 px-4 text-sm",
+        sm: "h-9 px-3 text-sm sm:h-8",
+        md: "h-11 px-4 text-sm sm:h-10",
         lg: "h-12 px-5 text-base", // touch-friendly
-        icon: "h-10 w-10",
+        icon: "h-11 w-11 sm:h-10 sm:w-10",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

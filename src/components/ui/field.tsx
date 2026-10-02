@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 
 const control =
-  "w-full rounded-lg border border-line bg-white px-3 text-sm text-navy-900 placeholder:text-muted/70 shadow-xs focus:border-ola-500 disabled:bg-surface";
+  "w-full rounded-lg border border-line bg-white px-3 text-base text-navy-900 sm:text-sm placeholder:text-muted/70 shadow-xs focus:border-ola-500 disabled:bg-surface";
 
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return <label className={cn("mb-1.5 block text-sm font-medium text-navy-800", className)} {...props} />;

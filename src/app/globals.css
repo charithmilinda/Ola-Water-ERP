@@ -34,7 +34,12 @@ body {
 }
 
 /* Tabular numbers everywhere numbers line up */
-.num { font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Phones: keep the page from sliding sideways; wide tables scroll inside their card */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+@supports (overflow: clip) { body { overflow-x: clip; } }
 
 /* Focus ring that is visible on every control */
 :where(a, button, input, select, textarea, summary):focus-visible {
