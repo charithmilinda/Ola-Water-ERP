@@ -2,6 +2,19 @@
 
 Assumptions and decisions made while building, as required by the master prompt (§ How to use this document, rule 5). Newest phase first.
 
+## Phase 3C — Reports (October 2026)
+
+**D-3C-01 · One reports centre.** 39 operational reports (sales, customers, stock, bottles, delivery, production & QC, finance, complaints) come from one database function, `run_report`, so the screen, the print-out and the Excel download always show the same figures. They are calculated from the live records each time (no overnight copies). The accounting reports from Phase 2B, fleet profitability, commissions, EPF/ETF and the asset register are linked from the same page.
+
+**D-3C-02 · Who sees which reports** follows the module permissions: sales and customer reports — Reports or Accounting (or sales team managers); stock — Inventory; bottles — Bottles; delivery — Deliveries; production — Production or QC; finance — Accounting; complaints — Complaints. Downloading needs `reports.export`, and **every download (including the accounting CSVs) is written to the audit trail** with its filters.
+
+**D-3C-03 · Definitions.** Sales are invoices (not void) by invoice date: "before VAT" = net of discounts; credit notes are not deducted in the sales reports (they are in the P&L). Rep and distributor sales are the invoices of the customers assigned to them; a distributor's target is pro-rated to the period. Delivery success = delivered + part delivered ÷ (those + failed). Production yield = produced ÷ planned; rejection = rejected ÷ (produced + rejected). Bottle exposure = OLA bottles outside the warehouse × replacement value, less deposits held for bottles with customers. Bottle ageing counts labelled bottles by days since they last moved. A bottle is "due for retirement" at 90% of `bottles.max_fill_count` (default 50 — confirm with your bottle supplier) or when not in good condition.
+
+**D-3C-04 · Limits.** A period can be at most 3 years; long lists stop at 1,000–3,000 rows (use filters or the download). PDF is through the browser's Print → Save as PDF.
+
+### Not verified in this phase
+- Every report was run against PostgreSQL 16 with the test data, checked against the source tables (daily sales and channels = invoices, stock valuation = balances, bottle circulation = all OLA bottles) and against the columns the screens show. Screens were type-checked and production-built but not clicked through against the live project.
+
 ## Phase 3B — Sales team, distributors, CRM (October 2026)
 
 **D-3B-01 · Sales reps** are staff logins (optionally linked to an employee) with a code, territory and commission plan. Customers are owned by a rep (Sales Team → assign customers). Monthly targets: sales (before VAT), collections, new customers and visits; actuals come from the rep's own customers' invoices and payments.
@@ -26,7 +39,7 @@ Assumptions and decisions made while building, as required by the master prompt 
 
 ## Phase 3A — Approvals, notifications, complaints, documents (October 2026)
 
-**D-3A-01 · Phase 3 split.** 3A (control: approvals inbox and rules, notifications and customer messages, complaints, documents), 3B (distributors, sales representatives, CRM), 3C (advanced reports).
+**D-3A-01 · Phase 3 split.** 3A (control: approvals inbox and rules, notifications and customer messages, complaints, documents), 3B (distributors, sales representatives, CRM), 3C (reports centre).
 
 **D-3A-02 · Approvals instead of refusals.** Large stock adjustments, discounts above the limit, credit limit / payment-term changes (including new credit customers), price list changes and bottle write-offs used to be refused for people without the right permission. Now the action is test-run (to catch ordinary mistakes immediately), stored as an approval request and carried out **for the person who asked** when the last approver approves; the audit trail shows the requester as the actor and "approved by … (APR-…)" as the reason. Nobody approves their own request. Each rule's approver permission, number of approvers (1–3, different people) and on/off switch is set in Approvals → Rules; limits are the existing approval settings. With two or three levels even approvers must ask.
 

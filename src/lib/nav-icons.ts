@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Briefcase,
   MapPinned,
   Percent,
@@ -91,6 +92,7 @@ export const NAV_ICONS = {
   Percent,
   Network,
   Target,
+  BarChart3,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

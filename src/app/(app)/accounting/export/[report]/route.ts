@@ -81,6 +81,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ repo
     return new NextResponse("Unknown report", { status: 404 });
   }
 
+  await supabase.rpc("log_export", { p_report: report, p_filters: { from, to, account: sp.get("account") } });
   const body = "﻿" + [header, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
   return new NextResponse(body, {
     headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="ola-${report}-${from}-${to}.csv"` },

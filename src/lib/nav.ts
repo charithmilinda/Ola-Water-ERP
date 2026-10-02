@@ -19,7 +19,11 @@ export type NavGroup = { label: string; items: NavItem[] };
 export const NAV: NavGroup[] = [
   {
     label: "Overview",
-    items: [{ href: "/", label: "Dashboard", icon: "LayoutDashboard", permissions: [] }],
+    items: [
+      { href: "/", label: "Dashboard", icon: "LayoutDashboard", permissions: [] },
+      { href: "/reports", label: "Reports", icon: "BarChart3", permissions: ["reports.view", "accounting.view", "sales_reps.manage", "customers.view", "inventory.view",
+        "bottles.view", "deliveries.view", "deliveries.manage", "production.view", "qc.view", "complaints.view", "complaints.manage"] },
+    ],
   },
   {
     label: "Control",

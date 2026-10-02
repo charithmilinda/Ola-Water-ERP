@@ -20,8 +20,12 @@ The full specification is in [`docs/OLA_Water_ERP_Master_Prompt_v2.md`](docs/OLA
 | **2C — People & assets** | HR (employees, attendance, leave, advances), payroll with EPF/ETF/APIT and payslips, fleet (documents, fuel logs, services, driver road expenses, vehicle profitability), fixed assets & depreciation | **Done** |
 | **3A — Control** | Approvals inbox and configurable rules (stock, discounts, credit, prices, bottle write-offs, plus all module approvals), notification bell, customer SMS / WhatsApp and staff email with outbox, complaints with SLA and QC review, document library with expiry alerts | **Done** |
 | **3B — Commercial** | Sales reps (My Day with GPS visits and collections, targets, commission paid through payroll), distributors / dealers, CRM (leads, follow-ups, opportunities, segments, campaigns, promotions) | **Done** |
-| 3C — Reports | Advanced reports and exports across all modules | Next |
-| 4 — Intelligence | AI assistant, analytics, forecasting | |
+| **3C — Reports** | Reports centre: 39 reports across sales, customers, stock, bottles, delivery, production & QC, finance and complaints, with filters, print / PDF and Excel download (audited) | **Done** |
+| 4 — Intelligence | AI assistant, analytics, forecasting | Next |
+
+### What Phase 3C adds
+
+- **Reports** (menu → Overview → Reports) — daily / monthly sales; by product, customer, customer type, shop & channel, distributor and rep; inactive and new customers; current stock, valuation, movements, damaged, low stock, batches & expiry; bottle circulation, bottles with customers, on vehicles & at shops, external bottles and two-way company statements, value exposure, losses, discrepancies, ageing, retirement due; delivery success, failure reasons, drivers, routes, vehicles; production, batch performance, QC failures, recalls; expenses, shop balances, deposit liability; complaints by category. Each has filters, totals, a chart where useful, print / PDF and Excel download.
 
 ### What Phase 3B adds
 
@@ -173,7 +177,7 @@ Optional, for messages (Phase 3A) — add only the ones you use:
 ## Testing
 
 ```bash
-npm run db:test      # runs all migrations + database tests (Phase 0 – 3B scenarios) on a throw-away PostgreSQL 16
+npm run db:test      # runs all migrations + database tests (Phase 0 – 3C scenarios) on a throw-away PostgreSQL 16
 npm run typecheck
 npm run lint
 npm run build
